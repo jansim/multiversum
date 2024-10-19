@@ -1,7 +1,7 @@
 [project]
-name = "multiverse"
+name = "multiversum"
 version = "0.1"
-description = "null"
+description = "A helper package to conduct multiverse analyses in Python"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [{name = "Jan Simson"}]
@@ -10,7 +10,10 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License"
 ]
 dependencies = [
-
+    "pandas",
+    "tqdm",
+    "papermill",
+    "joblib"
 ]
 
 [build-system]
@@ -25,4 +28,4 @@ CI = "https://github.com/jansim/multiverse/actions"
 
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "ruff"]

@@ -22,10 +22,10 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-Homepage = "https://github.com/jansim/multiverse"
-Changelog = "https://github.com/jansim/multiverse/releases"
-Issues = "https://github.com/jansim/multiverse/issues"
-CI = "https://github.com/jansim/multiverse/actions"
+Homepage = "https://github.com/jansim/multiversum"
+Changelog = "https://github.com/jansim/multiversum/releases"
+Issues = "https://github.com/jansim/multiversum/issues"
+CI = "https://github.com/jansim/multiversum/actions"
 
 
 [project.optional-dependencies]

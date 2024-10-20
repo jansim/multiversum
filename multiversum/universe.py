@@ -216,7 +216,7 @@ class Universe:
                 variables that were not used as features.
 
         Returns:
-            A tuple containing two dicst: explicit fairness metrics and
+            A tuple containing two dics: explicit fairness metrics and
                 performance metrics split by fairness groups.
         """
         # Determine cutoff for predictions

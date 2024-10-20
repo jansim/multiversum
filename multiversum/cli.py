@@ -1,16 +1,18 @@
 import argparse
 from pathlib import Path
-from typing import Union
+from typing import Optional
 
 from .multiverse import DEFAULT_SEED, MultiverseAnalysis
 
-def run_cli(dimensions: Union[Path, dict, None] = None) -> None:
+DEFAULT_CONFIG_FILE = "multiversum.json"
+
+def run_cli(dimensions: Optional[dict] = None) -> None:
     """Run a multiverse analysis from the command line.
 
     Args:
-        dimensions (Union[Path, dict, None], optional): Manually specify
-            dimensions. Set to None to use normal default / allow specification
-            as an argument. Defaults to None.
+        dimensions (dict, optional): Manually specify dimensions. Set to None to
+            use normal default / allow specification as an argument.
+            Defaults to None.
 
     Raises:
         FileNotFoundError: If the dimensions file is not found.
@@ -35,15 +37,15 @@ def run_cli(dimensions: Union[Path, dict, None] = None) -> None:
             return string
         else:
             raise FileNotFoundError(string)
-    if dimensions is None:
-        parser.add_argument(
-            "--dimensions",
-            help=(
-                "Relative path to a JSON file with a dictionary of dimensions for the multiverse."
-            ),
-            default="multiverse.json",
-            type=verify_file,
-        )
+    parser.add_argument(
+        "--config",
+        help=(
+            "Relative path to a JSON file with a config for the multiverse."
+            f"Defaults to {DEFAULT_CONFIG_FILE}."
+        ),
+        default=None,
+        type=verify_file,
+    )
 
     parser.add_argument(
         "--notebook",
@@ -78,8 +80,16 @@ def run_cli(dimensions: Union[Path, dict, None] = None) -> None:
     )
     args = parser.parse_args()
 
+    if args.config is not None:
+        config_file = Path(args.config)
+    elif Path(DEFAULT_CONFIG_FILE).is_file():
+        config_file = Path(DEFAULT_CONFIG_FILE)
+    else:
+        config_file = None
+
     multiverse_analysis = MultiverseAnalysis(
-        dimensions=Path(args.dimensions) if dimensions is None else dimensions,
+        dimensions=dimensions,
+        config_file=config_file,
         notebook=Path(args.notebook),
         output_dir=Path(args.output_dir),
         new_run=(args.mode != "continue"),

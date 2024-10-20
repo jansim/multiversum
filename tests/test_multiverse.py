@@ -53,11 +53,11 @@ def test_MultiverseAnalysis_noteboook_simple():
 def test_CLI_simple():
     output_dir = get_temp_dir("test_CLI_simple")
     notebook = TEST_DIR / "notebooks" / "simple.ipynb"
-    dimensions = TEST_DIR / "notebooks" / "simple.json"
+    config = TEST_DIR / "notebooks" / "simple.json"
 
     # Run a test multiverse analysis via the CLI
     os.system(
-        f"python -m multiversum --notebook {notebook} --dimensions {dimensions} --output-dir {output_dir}"
+        f"python -m multiversum --notebook {notebook} --config {config} --output-dir {output_dir}"
     )
 
     # Check whether all expected files are there

@@ -4,7 +4,7 @@ This module contains helper functions to orchestrate a multiverse analysis.
 
 import itertools
 from pathlib import Path
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Dict, List, Optional, TypedDict
 from hashlib import md5
 import subprocess
 import json
@@ -45,8 +45,9 @@ class MultiverseAnalysis:
 
     def __init__(
         self,
-        dimensions: Union[Dict, Path],
+        dimensions: Optional[Dict] = None,
         notebook: Path = Path("./universe_analysis.ipynb"),
+        config_file: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
@@ -61,6 +62,8 @@ class MultiverseAnalysis:
         - dimensions: A dictionary containing the dimensions of the multiverse.
             Each dimension corresponds to a decision.
             Alternatively a Path to a JSON file containing the dimensions.
+        - notebook: The Path to the notebook to run.
+        - config_file: A Path to a JSON file containing the dimensions.
         - output_dir: The directory to store the output in.
         - run_no: The number of the current run. Defaults to an automatically
             incrementing integer number if new_run is True or the last run if
@@ -68,19 +71,26 @@ class MultiverseAnalysis:
         - new_run: Whether this is a new run or not. Defaults to True.
         - seed: The seed to use for the analysis.
         """
-        if isinstance(dimensions, Path):
-            with open(dimensions, "r") as fp:
-                self.dimensions = json.load(fp)
-        elif isinstance(dimensions, dict):
+        if isinstance(config_file, Path):
+            with open(config_file, "r") as fp:
+                config = json.load(fp)
+
+                if 'dimensions' in config:
+                    assert dimensions is None
+                    self.dimensions = config['dimensions']
+
+        if dimensions is not None:
             self.dimensions = dimensions
-        else:
-            raise ValueError("Dimensions must be a dictionary or a Path object.")
+
         self.notebook = notebook
         self.output_dir = output_dir
         self.seed=seed
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )
+
+        if self.dimensions is None:
+            raise ValueError("Dimensions need to be specified either directly or in config.")
 
     def get_run_dir(self, sub_directory: Optional[str] = None) -> Path:
         """

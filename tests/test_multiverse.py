@@ -1,4 +1,5 @@
-from multiversum import generate_multiverse_grid, MultiverseAnalysis
+import pandas as pd
+from multiversum import generate_multiverse_grid, MultiverseAnalysis, Universe
 
 from pathlib import Path
 import shutil
@@ -66,3 +67,23 @@ def test_CLI_simple():
     assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
     assert count_files(output_dir, "counter.txt") == 1
     assert count_files(output_dir, "multiverse_grid.json") == 1
+
+
+def test_Universe_add_universe_info():
+    uv = Universe(settings={"dimensions": {"hello": "world"}})
+
+    df = uv._add_universe_info(pd.DataFrame({"test_value": [42]}))
+    # Drop execution time because it will always change
+    df.drop(["mv_execution_time"], axis="columns", inplace=True)
+
+    pd.testing.assert_frame_equal(
+        df,
+        pd.DataFrame(
+            {
+                "mv_universe_id": ["no-universe-id-provided"],
+                "mv_run_no": 0,
+                "mv_dim_hello": "world",
+                "test_value": 42,
+            }
+        ),
+    )

@@ -9,6 +9,7 @@ import pandas as pd
 import json
 import numpy as np
 import warnings
+from itertools import count
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
 from .multiverse import generate_multiverse_grid
@@ -149,21 +150,17 @@ class Universe:
         parsed_settings = (
             json.loads(settings) if isinstance(settings, str) else settings
         )
-        self.run_no = (
-            parsed_settings["run_no"] if parsed_settings["run_no"] is not None else -1
-        )
+        self.run_no = parsed_settings["run_no"] if "run_no" in parsed_settings else 0
         self.universe_id = (
             parsed_settings["universe_id"]
-            if parsed_settings["universe_id"] is not None
+            if "universe_id" in parsed_settings
             else "no-universe-id-provided"
         )
         self.dimensions = parsed_settings["dimensions"]
-        self.seed = (
-            parsed_settings["seed"] if parsed_settings["seed"] is not None else -1
-        )
+        self.seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
         self.output_dir = (
             Path(parsed_settings["output_dir"])
-            if parsed_settings["output_dir"] is not None
+            if "output_dir" in parsed_settings
             else Path("./output")
         )
 
@@ -189,12 +186,39 @@ class Universe:
             self.ts_end = time.time()
         return self.ts_end - self.ts_start
 
-    def save_data(self, data: pd.DataFrame) -> None:
+    def _add_universe_info(
+        self, data: pd.DataFrame, overwrite_dimensions: Optional[dict] = None
+    ) -> pd.DataFrame:
+        # Add general unvierse / run info (to the front of the dataframe)
+        index = count()
+        data.insert(next(index), "mv_universe_id", self.universe_id)
+        data.insert(next(index), "mv_run_no", self.run_no)
+        data.insert(next(index), "mv_execution_time", self.get_execution_time())
+
+        # Add info about dimensions
+        dimensions = (
+            self.dimensions if overwrite_dimensions is None else overwrite_dimensions
+        )
+        dimensions_sorted = sorted(dimensions.keys())
+        for dimension in dimensions_sorted:
+            data.insert(next(index), f"mv_dim_{dimension}", dimensions[dimension])
+        return data
+
+    def save_data(self, data: pd.DataFrame, add_info: bool = True) -> None:
+        # Add universe data to the dataframe
+        if add_info:
+            data = self._add_universe_info(data=data)
+
+        # Path management
         target_dir = self.output_dir / "runs" / str(self.run_no) / "data"
         # Make sure the directory exists
         target_dir.mkdir(parents=True, exist_ok=True)
         filename = f"d_{str(self.run_no)}_{self.universe_id}.csv"
-        data.to_csv(target_dir / filename, index=False)
+        filepath = target_dir / filename
+        if filepath.exists():
+            warnings.warn(f"File {filepath} already exists. Overwriting it.")
+        # Write the file
+        data.to_csv(filepath, index=False)
 
     def compute_sub_universe_metrics(
         self,
@@ -335,14 +359,9 @@ class Universe:
         Returns:
             A pandas dataframe containing the metrics for the sub-universe.
         """
-        final_output = pd.DataFrame(
-            data={
-                "run_no": self.run_no,
-                "universe_id": self.universe_id,
-                "universe_settings": json.dumps(sub_universe, sort_keys=True),
-                "execution_time": self.get_execution_time(),
-            },
-            index=[self.universe_id],
+        final_output = self._add_universe_info(
+            data=pd.DataFrame(index=[self.universe_id]),
+            overwrite_dimensions=sub_universe,
         )
 
         data_mask = filter_data(sub_universe=sub_universe, org_test=org_test)

@@ -36,4 +36,4 @@ python -m pytest
 
 ### Formatting
 
-Ruff is used for formatting and linting. Formatting can be automatically checked / applied wherever possible via `ruff check . --fix`.
+Ruff is used for formatting and linting. Formatting can be automatically checked / applied wherever possible via `ruff check . --fix && ruff format`.

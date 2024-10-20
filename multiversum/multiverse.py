@@ -75,22 +75,24 @@ class MultiverseAnalysis:
             with open(config_file, "r") as fp:
                 config = json.load(fp)
 
-                if 'dimensions' in config:
+                if "dimensions" in config:
                     assert dimensions is None
-                    self.dimensions = config['dimensions']
+                    self.dimensions = config["dimensions"]
 
         if dimensions is not None:
             self.dimensions = dimensions
 
         self.notebook = notebook
         self.output_dir = output_dir
-        self.seed=seed
+        self.seed = seed
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )
 
         if self.dimensions is None:
-            raise ValueError("Dimensions need to be specified either directly or in config.")
+            raise ValueError(
+                "Dimensions need to be specified either directly or in config."
+            )
 
     def get_run_dir(self, sub_directory: Optional[str] = None) -> Path:
         """

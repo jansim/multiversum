@@ -71,6 +71,7 @@ def flatten_dict(d: dict, parent_key="", sep="_") -> dict:
             items.append((new_key, v))
     return dict(items)
 
+
 def list_wrap(value: Any) -> List[Any]:
     """Wrap a value in a List if it is not already a list.
 
@@ -211,45 +212,51 @@ class UniverseAnalysis:
         y_pred = predict_w_threshold(y_pred_prob, threshold)
 
         try:
-
             from fairlearn.metrics import MetricFrame
             from sklearn.metrics import (
                 accuracy_score,
                 precision_score,
                 balanced_accuracy_score,
-                f1_score
+                f1_score,
             )
             from fairlearn.metrics import (
                 false_positive_rate,
                 false_negative_rate,
                 selection_rate,
-                count
+                count,
             )
             from fairlearn.metrics import (
                 equalized_odds_difference,
                 equalized_odds_ratio,
                 demographic_parity_difference,
                 demographic_parity_ratio,
-
             )
 
-            metrics = {
-                "accuracy": accuracy_score,
-                "balanced accuracy": balanced_accuracy_score,
-                "f1": f1_score,
-                "precision": precision_score,
-                "false positive rate": false_positive_rate,
-                "false negative rate": false_negative_rate,
-                "selection rate": selection_rate,
-                "count": count,
-            } if self.metrics is None else self.metrics
+            metrics = (
+                {
+                    "accuracy": accuracy_score,
+                    "balanced accuracy": balanced_accuracy_score,
+                    "f1": f1_score,
+                    "precision": precision_score,
+                    "false positive rate": false_positive_rate,
+                    "false negative rate": false_negative_rate,
+                    "selection rate": selection_rate,
+                    "count": count,
+                }
+                if self.metrics is None
+                else self.metrics
+            )
 
-            fairness_metrics = {
-                "equalized_odds_difference": equalized_odds_difference,
-                "equalized_odds_ratio": equalized_odds_ratio,
-                "demographic_parity_difference": demographic_parity_difference,
-                "demographic_parity_ratio": demographic_parity_ratio,
-            } if self.fairness_metrics is None else self.fairness_metrics
+            fairness_metrics = (
+                {
+                    "equalized_odds_difference": equalized_odds_difference,
+                    "equalized_odds_ratio": equalized_odds_ratio,
+                    "demographic_parity_difference": demographic_parity_difference,
+                    "demographic_parity_ratio": demographic_parity_ratio,
+                }
+                if self.fairness_metrics is None
+                else self.fairness_metrics
+            )
 
             # Compute fairness metrics
             fairness_dict = {
@@ -312,10 +319,7 @@ class UniverseAnalysis:
             index=[self.universe_id],
         )
 
-        data_mask = filter_data(
-            sub_universe=sub_universe,
-            org_test=org_test
-        )
+        data_mask = filter_data(sub_universe=sub_universe, org_test=org_test)
         final_output["test_size_n"] = data_mask.sum()
         final_output["test_size_frac"] = data_mask.sum() / len(data_mask)
 

@@ -44,11 +44,11 @@ def test_MultiverseAnalysis_noteboook_simple():
     )
     mv.examine_multiverse()
 
-
     # Check whether all expected files are there
     assert count_files(output_dir, "runs/1/data/*.csv") == 4
     assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
     assert count_files(output_dir, "counter.txt") == 1
+
 
 def test_CLI_simple():
     output_dir = get_temp_dir("test_CLI_simple")

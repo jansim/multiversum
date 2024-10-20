@@ -8,3 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v1
+        name: Lint
+      - uses: astral-sh/ruff-action@v1
+        name: Format
+        with:
+          args: "format --check"

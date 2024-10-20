@@ -6,6 +6,7 @@ from .multiverse import DEFAULT_SEED, MultiverseAnalysis
 
 DEFAULT_CONFIG_FILE = "multiversum.json"
 
+
 def run_cli(dimensions: Optional[dict] = None) -> None:
     """Run a multiverse analysis from the command line.
 
@@ -37,6 +38,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
             return string
         else:
             raise FileNotFoundError(string)
+
     parser.add_argument(
         "--config",
         help=(
@@ -49,9 +51,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
 
     parser.add_argument(
         "--notebook",
-        help=(
-            "Relative path to the notebook to run."
-        ),
+        help=("Relative path to the notebook to run."),
         default="./universe-analysis.ipynb",
         type=verify_file,
     )
@@ -61,20 +61,17 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
             return string
         else:
             raise NotADirectoryError(string)
+
     parser.add_argument(
         "--output-dir",
-        help=(
-            "Relative path to output directory for the results."
-        ),
+        help=("Relative path to output directory for the results."),
         default="./output_dir",
         type=verify_dir,
     )
 
     parser.add_argument(
         "--seed",
-        help=(
-            "The seed to use for the analysis."
-        ),
+        help=("The seed to use for the analysis."),
         default=str(DEFAULT_SEED),
         type=int,
     )
@@ -99,14 +96,18 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
     multiverse_grid = multiverse_analysis.generate_grid(save=True)
     print(f"Generated N = {len(multiverse_grid)} universes")
 
-    print(f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed})~")
+    print(
+        f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed})~"
+    )
 
     # Run the analysis for the first universe
     if args.mode == "test":
         print("Small-Scale-Test Run")
         multiverse_analysis.visit_universe(multiverse_grid[0])
         if len(multiverse_grid) > 1:
-            multiverse_analysis.visit_universe(multiverse_grid[len(multiverse_grid) - 1])
+            multiverse_analysis.visit_universe(
+                multiverse_grid[len(multiverse_grid) - 1]
+            )
     elif args.mode == "continue":
         print("Continuing Previous Run")
         missing_universes = multiverse_analysis.check_missing_universes()[

@@ -7,27 +7,8 @@ import time
 import pandas as pd
 import json
 import numpy as np
-from typing import Any, Dict, List, Optional, Tuple, Function
-from fairlearn.metrics import MetricFrame
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    balanced_accuracy_score,
-    f1_score
-)
-from fairlearn.metrics import (
-    false_positive_rate,
-    false_negative_rate,
-    selection_rate,
-    count
-)
-from fairlearn.metrics import (
-    equalized_odds_difference,
-    equalized_odds_ratio,
-    demographic_parity_difference,
-    demographic_parity_ratio,
+from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
-)
 from .multiverse import generate_multiverse_grid
 
 
@@ -122,23 +103,8 @@ class UniverseAnalysis:
         ts_end: The timestamp of the end of the analysis.
     """
 
-    metrics = {
-        "accuracy": accuracy_score,
-        "balanced accuracy": balanced_accuracy_score,
-        "f1": f1_score,
-        "precision": precision_score,
-        "false positive rate": false_positive_rate,
-        "false negative rate": false_negative_rate,
-        "selection rate": selection_rate,
-        "count": count,
-    }
-
-    fairness_metrics = {
-        "equalized_odds_difference": equalized_odds_difference,
-        "equalized_odds_ratio": equalized_odds_ratio,
-        "demographic_parity_difference": demographic_parity_difference,
-        "demographic_parity_ratio": demographic_parity_ratio,
-    }
+    metrics = None
+    fairness_metrics = None
     ts_start = None
     ts_end = None
 
@@ -146,10 +112,10 @@ class UniverseAnalysis:
         self,
         run_no: int,
         universe_id: str,
-        universe: Dict,
+        universe: Union[str, Dict],
         output_dir: str,
-        metrics: Optional[Dict[str, Function]] = None,
-        fairness_metrics: Optional[Dict[str, Function]] = None,
+        metrics: Optional[Dict[str, Callable]] = None,
+        fairness_metrics: Optional[Dict[str, Callable]] = None,
     ) -> None:
         """
         Initialize the UniverseAnalysis class.
@@ -159,24 +125,30 @@ class UniverseAnalysis:
         Args:
             run_no: The run number of the multiverse analysis.
             universe_id: The id of the universe.
-            universe: The universe settings.
+            universe: The universe settings. Will be automatically parsed if
+                JSON encoded (usually happens when passed via papermill).
             output_dir: The directory to which the output should be written.
             metrics: A dictionary containing the metrics to be computed.
+                Pass an empty dictionary to not compute any.
             fairness_metrics: A dictionary containing the fairness metrics to be
                 computed. (These are cumputed with awareness of groups.)
+                Pass an empty dictionary to not compute any.
         """
         self.ts_start = time.time()
 
         self.run_no = run_no
         self.universe_id = universe_id
-        self.universe = universe
+
+        # Parse universe settings (if necessary)
+        if isinstance(universe, str):
+            self.universe = json.loads(universe)
+        else:
+            self.universe = universe
 
         self.output_dir = Path(output_dir)
 
-        if metrics is not None:
-            self.metrics = metrics
-        if fairness_metrics is not None:
-            self.fairness_metrics = fairness_metrics
+        self.metrics = metrics
+        self.fairness_metrics = fairness_metrics
 
     def get_execution_time(self) -> float:
         """
@@ -190,7 +162,14 @@ class UniverseAnalysis:
             self.ts_end = time.time()
         return self.ts_end - self.ts_start
 
-    def compute_metrics(
+    def save_data(self, data: pd.DataFrame) -> None:
+        target_dir = self.output_dir / "runs" / str(self.run_no) / "data"
+        # Make sure the directory exists
+        target_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"d_{str(self.run_no)}_{self.universe_id}.csv"
+        data.to_csv(target_dir / filename, index=False)
+
+    def compute_sub_universe_metrics(
         self,
         sub_universe: Dict,
         y_pred_prob: pd.Series,
@@ -231,25 +210,70 @@ class UniverseAnalysis:
 
         y_pred = predict_w_threshold(y_pred_prob, threshold)
 
-        # Compute fairness metrics
-        fairness_dict = {
-            name: metric(
+        try:
+
+            from fairlearn.metrics import MetricFrame
+            from sklearn.metrics import (
+                accuracy_score,
+                precision_score,
+                balanced_accuracy_score,
+                f1_score
+            )
+            from fairlearn.metrics import (
+                false_positive_rate,
+                false_negative_rate,
+                selection_rate,
+                count
+            )
+            from fairlearn.metrics import (
+                equalized_odds_difference,
+                equalized_odds_ratio,
+                demographic_parity_difference,
+                demographic_parity_ratio,
+
+            )
+
+            metrics = {
+                "accuracy": accuracy_score,
+                "balanced accuracy": balanced_accuracy_score,
+                "f1": f1_score,
+                "precision": precision_score,
+                "false positive rate": false_positive_rate,
+                "false negative rate": false_negative_rate,
+                "selection rate": selection_rate,
+                "count": count,
+            } if self.metrics is None else self.metrics
+
+            fairness_metrics = {
+                "equalized_odds_difference": equalized_odds_difference,
+                "equalized_odds_ratio": equalized_odds_ratio,
+                "demographic_parity_difference": demographic_parity_difference,
+                "demographic_parity_ratio": demographic_parity_ratio,
+            } if self.fairness_metrics is None else self.fairness_metrics
+
+            # Compute fairness metrics
+            fairness_dict = {
+                name: metric(
+                    y_true=y_test,
+                    y_pred=y_pred,
+                    sensitive_features=org_test[fairness_group_column],
+                )
+                for name, metric in fairness_metrics.items()
+            }
+
+            # Compute "normal" metrics (but split by fairness column)
+            metric_frame = MetricFrame(
+                metrics=metrics,
                 y_true=y_test,
                 y_pred=y_pred,
                 sensitive_features=org_test[fairness_group_column],
             )
-            for name, metric in self.fairness_metrics.items()
-        }
 
-        # Compute "normal" metrics (but split by fairness column)
-        metric_frame = MetricFrame(
-            metrics=self.metrics,
-            y_true=y_test,
-            y_pred=y_pred,
-            sensitive_features=org_test[fairness_group_column],
-        )
-
-        return (fairness_dict, metric_frame)
+            return (fairness_dict, metric_frame)
+        except ImportError:
+            raise ImportError(
+                "Packages fairlearn and scikit-learn are required for computing metrics."
+            )
 
     def visit_sub_universe(
         self, sub_universe, y_pred_prob, y_test, org_test, filter_data
@@ -296,7 +320,7 @@ class UniverseAnalysis:
         final_output["test_size_frac"] = data_mask.sum() / len(data_mask)
 
         # Compute metrics for majority-minority split
-        fairness_dict, metric_frame = self.compute_metrics(
+        fairness_dict, metric_frame = self.compute_sub_universe_metrics(
             sub_universe,
             y_pred_prob[data_mask],
             y_test[data_mask],
@@ -329,7 +353,7 @@ class UniverseAnalysis:
         # Within-Universe variation
         return generate_multiverse_grid(universe_all_lists)
 
-    def generate_final_output(
+    def compute_final_metrics(
         self, y_pred_prob, y_test, org_test, filter_data, save=True
     ) -> pd.DataFrame:
         """
@@ -368,10 +392,6 @@ class UniverseAnalysis:
 
         # Write the final output file
         if save:
-            target_dir = self.output_dir / "runs" / str(self.run_no) / "data"
-            # Make sure the directory exists
-            target_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"d_{str(self.run_no)}_{self.universe_id}.csv"
-            final_output.to_csv(target_dir / filename, index=False)
+            self.save_data(final_output)
 
         return final_output

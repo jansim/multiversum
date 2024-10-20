@@ -13,7 +13,8 @@ dependencies = [
     "pandas",
     "tqdm",
     "papermill",
-    "joblib"
+    "joblib",
+    "ipykernel"
 ]
 
 [build-system]

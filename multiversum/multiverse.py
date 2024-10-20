@@ -4,7 +4,7 @@ This module contains helper functions to orchestrate a multiverse analysis.
 
 import itertools
 from pathlib import Path
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict, Union
 from hashlib import md5
 import subprocess
 import json
@@ -14,6 +14,8 @@ import papermill as pm
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from .parallel import tqdm_joblib
+
+DEFAULT_SEED = 2023
 
 
 def generate_multiverse_grid(dimensions: Dict[str, List[str]]):
@@ -39,13 +41,16 @@ class MissingUniverseInfo(TypedDict):
 
 
 class MultiverseAnalysis:
+    grid = None
+
     def __init__(
         self,
-        dimensions: Dict,
+        dimensions: Union[Dict, Path],
+        notebook: Path = Path("./universe_analysis.ipynb"),
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
-        seed: Optional[int] = 2023,
+        seed: Optional[int] = DEFAULT_SEED,
     ) -> None:
         """
         Initializes a new MultiverseAnalysis instance.
@@ -55,6 +60,7 @@ class MultiverseAnalysis:
         Args:
         - dimensions: A dictionary containing the dimensions of the multiverse.
             Each dimension corresponds to a decision.
+            Alternatively a Path to a JSON file containing the dimensions.
         - output_dir: The directory to store the output in.
         - run_no: The number of the current run. Defaults to an automatically
             incrementing integer number if new_run is True or the last run if
@@ -62,7 +68,14 @@ class MultiverseAnalysis:
         - new_run: Whether this is a new run or not. Defaults to True.
         - seed: The seed to use for the analysis.
         """
-        self.dimensions = dimensions
+        if isinstance(dimensions, Path):
+            with open(dimensions, "r") as fp:
+                self.dimensions = json.load(fp)
+        elif isinstance(dimensions, dict):
+            self.dimensions = dimensions
+        else:
+            raise ValueError("Dimensions must be a dictionary or a Path object.")
+        self.notebook = notebook
         self.output_dir = output_dir
         self.seed=seed
         self.run_no = (
@@ -187,7 +200,10 @@ class MultiverseAnalysis:
             json.dumps(universe_parameters, sort_keys=True).encode("utf-8")
         ).hexdigest()
 
-    def examine_multiverse(self, multiverse_grid, n_jobs=-2):
+    def examine_multiverse(self, multiverse_grid=None, n_jobs=-2):
+        if multiverse_grid is None:
+            multiverse_grid = self.grid or self.generate_grid(save=False)
+
         # Run analysis for all universes
         with tqdm_joblib(
             tqdm(desc="Visiting Universes", total=len(multiverse_grid))
@@ -227,7 +243,7 @@ class MultiverseAnalysis:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         execute_notebook_via_api(
-            input_path="universe_analysis.ipynb",
+            input_path=str(self.notebook),
             output_path=str(output_dir / output_filename),
             parameters={
                 "universe_id": universe_id,

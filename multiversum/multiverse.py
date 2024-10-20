@@ -227,7 +227,7 @@ class MultiverseAnalysis:
                 for universe_params in multiverse_grid
             )
 
-    def visit_universe(self, universe_parameters: Dict[str, str]):
+    def visit_universe(self, universe_dimensions: Dict[str, str]):
         """
         Run the complete analysis for a single universe.
 
@@ -235,17 +235,14 @@ class MultiverseAnalysis:
         directory.
 
         Args:
-            universe_parameters: A dictionary containing the parameters
+            universe_dimensions: A dictionary containing the parameters
             for the universe.
 
         Returns:
             None
         """
         # Generate universe ID
-        universe_id = self.generate_universe_id(universe_parameters)
-
-        # Generate parameter string
-        universe_param_string = json.dumps(universe_parameters, sort_keys=True)
+        universe_id = self.generate_universe_id(universe_dimensions)
 
         # Generate final command
         output_dir = self.get_run_dir(sub_directory="notebooks")
@@ -254,15 +251,21 @@ class MultiverseAnalysis:
         # Ensure output dir exists
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Prepare settings dictionary
+        settings = {
+            "universe_id": universe_id,
+            "dimensions": universe_dimensions,
+            "run_no": self.run_no,
+            "output_dir": str(self.output_dir),
+            "seed": self.seed,
+        }
+        settings_str = json.dumps(settings, sort_keys=True)
+
         execute_notebook_via_api(
             input_path=str(self.notebook),
             output_path=str(output_dir / output_filename),
             parameters={
-                "universe_id": universe_id,
-                "run_no": str(self.run_no),
-                "universe": universe_param_string,
-                "output_dir": str(self.output_dir),
-                "seed": str(self.seed),
+                "settings": settings_str,
             },
         )
 

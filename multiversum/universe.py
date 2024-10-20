@@ -3,10 +3,12 @@ a multiverse analysis.
 """
 
 from pathlib import Path
+import random
 import time
 import pandas as pd
 import json
 import numpy as np
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
 from .multiverse import generate_multiverse_grid
@@ -88,7 +90,7 @@ def list_wrap(value: Any) -> List[Any]:
         return [value]
 
 
-class UniverseAnalysis:
+class Universe:
     """A class to help with running the analysis of a single universe contained
         within a multiverse analysis.
 
@@ -111,45 +113,69 @@ class UniverseAnalysis:
 
     def __init__(
         self,
-        run_no: int,
-        universe_id: str,
-        universe: Union[str, Dict],
-        output_dir: str,
+        settings: Union[str, Dict[str, Any]],
         metrics: Optional[Dict[str, Callable]] = None,
         fairness_metrics: Optional[Dict[str, Callable]] = None,
+        set_seed: bool = True,
     ) -> None:
         """
-        Initialize the UniverseAnalysis class.
+        Initialize the Universe class.
 
         The arguments should be passed in from the larger multiverse analysis.
 
         Args:
-            run_no: The run number of the multiverse analysis.
-            universe_id: The id of the universe.
-            universe: The universe settings. Will be automatically parsed if
-                JSON encoded (usually happens when passed via papermill).
-            output_dir: The directory to which the output should be written.
+            settings: The settings for the universe analysis. This can usually
+                just be passed along from the multiverse analysis. You only need
+                to specify this yourself when developing / trying out an
+                analysis. Possible keys in the dictionary are:
+                - dimensions: The specified universe dimensions. This is the
+                    only required information.
+                - run_no: The run number of the multiverse analysis.
+                - seed: The seed to use for analyses.
+                - universe_id: The id of the universe.
+                output_dir: The directory to which the output should be written.
             metrics: A dictionary containing the metrics to be computed.
                 Pass an empty dictionary to not compute any.
             fairness_metrics: A dictionary containing the fairness metrics to be
                 computed. (These are cumputed with awareness of groups.)
                 Pass an empty dictionary to not compute any.
+            set_seed: Whether to use the seed provided in the settings.
+                Defaults to True. Please note, that this only sets the seed in
+                the Python random module and numpy.
         """
         self.ts_start = time.time()
 
-        self.run_no = run_no
-        self.universe_id = universe_id
-
-        # Parse universe settings (if necessary)
-        if isinstance(universe, str):
-            self.universe = json.loads(universe)
-        else:
-            self.universe = universe
-
-        self.output_dir = Path(output_dir)
+        # Extract settings
+        parsed_settings = (
+            json.loads(settings) if isinstance(settings, str) else settings
+        )
+        self.run_no = (
+            parsed_settings["run_no"] if parsed_settings["run_no"] is not None else -1
+        )
+        self.universe_id = (
+            parsed_settings["universe_id"]
+            if parsed_settings["universe_id"] is not None
+            else "no-universe-id-provided"
+        )
+        self.dimensions = parsed_settings["dimensions"]
+        self.seed = (
+            parsed_settings["seed"] if parsed_settings["seed"] is not None else -1
+        )
+        self.output_dir = (
+            Path(parsed_settings["output_dir"])
+            if parsed_settings["output_dir"] is not None
+            else Path("./output")
+        )
 
         self.metrics = metrics
         self.fairness_metrics = fairness_metrics
+
+        if self.dimensions is None:
+            warnings.warn("No dimensions specified for universe analysis.")
+
+        if set_seed:
+            random.seed(self.seed)
+            np.random.seed(self.seed)
 
     def get_execution_time(self) -> float:
         """
@@ -352,7 +378,7 @@ class UniverseAnalysis:
             A list of dictionaries containing the sub-universes.
         """
         # Wrap all non-lists in the universe to make them work with generate_multiverse_grid
-        universe_all_lists = {k: list_wrap(v) for k, v in self.universe.items()}
+        universe_all_lists = {k: list_wrap(v) for k, v in self.dimensions.items()}
 
         # Within-Universe variation
         return generate_multiverse_grid(universe_all_lists)

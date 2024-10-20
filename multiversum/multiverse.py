@@ -15,7 +15,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from .parallel import tqdm_joblib
 
-DEFAULT_SEED = 2023
+DEFAULT_SEED = 80539
 
 
 def generate_multiverse_grid(dimensions: Dict[str, List[str]]):

@@ -441,6 +441,6 @@ class Universe:
 
         # Write the final output file
         if save:
-            self.save_data(final_output)
+            self.save_data(final_output, add_info=False)
 
         return final_output

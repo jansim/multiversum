@@ -56,17 +56,11 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         type=verify_file,
     )
 
-    def verify_dir(string):
-        if Path(string).is_dir():
-            return string
-        else:
-            raise NotADirectoryError(string)
-
     parser.add_argument(
         "--output-dir",
         help=("Relative path to output directory for the results."),
-        default="./output_dir",
-        type=verify_dir,
+        default="./output",
+        type=str,
     )
 
     parser.add_argument(
@@ -97,7 +91,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
     print(f"Generated N = {len(multiverse_grid)} universes")
 
     print(
-        f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed})~"
+        f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed}) ~"
     )
 
     # Run the analysis for the first universe

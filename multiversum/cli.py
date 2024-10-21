@@ -52,7 +52,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
     parser.add_argument(
         "--notebook",
         help=("Relative path to the notebook to run."),
-        default="./universe-analysis.ipynb",
+        default="./universe.ipynb",
         type=verify_file,
     )
 

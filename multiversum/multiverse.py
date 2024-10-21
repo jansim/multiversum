@@ -46,7 +46,7 @@ class MultiverseAnalysis:
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
-        notebook: Path = Path("./universe_analysis.ipynb"),
+        notebook: Path = Path("./universe.ipynb"),
         config_file: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,

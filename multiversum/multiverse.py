@@ -15,6 +15,13 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from .parallel import tqdm_joblib
 
+import sys
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
 DEFAULT_SEED = 80539
 
 
@@ -72,12 +79,18 @@ class MultiverseAnalysis:
         - seed: The seed to use for the analysis.
         """
         if isinstance(config_file, Path):
-            with open(config_file, "r") as fp:
-                config = json.load(fp)
+            if config_file.suffix == ".toml":
+                with open(config_file, "rb") as fp:
+                    config = tomllib.load(fp)
+            elif config_file.suffix == ".json":
+                with open(config_file, "r") as fp:
+                    config = json.load(fp)
+            else:
+                raise ValueError("Only .toml and .json files are supported as config.")
 
-                if "dimensions" in config:
-                    assert dimensions is None
-                    self.dimensions = config["dimensions"]
+            if "dimensions" in config:
+                assert dimensions is None
+                self.dimensions = config["dimensions"]
 
         if dimensions is not None:
             self.dimensions = dimensions

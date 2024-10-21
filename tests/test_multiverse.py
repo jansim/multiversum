@@ -33,6 +33,26 @@ def test_grid():
     ]
 
 
+def test_MultiverseAnalysis_config_json():
+    mv = MultiverseAnalysis(
+        config_file=TEST_DIR / "notebooks" / "simple_a.json", run_no=0
+    )
+    assert mv.dimensions == {
+        "x": ["A", "B"],
+        "y": ["A", "B"],
+    }
+
+
+def test_MultiverseAnalysis_config_toml():
+    mv = MultiverseAnalysis(
+        config_file=TEST_DIR / "notebooks" / "simple_b.toml", run_no=0
+    )
+    assert mv.dimensions == {
+        "x": ["B", "C"],
+        "y": ["B", "C"],
+    }
+
+
 def test_MultiverseAnalysis_noteboook_simple():
     output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
     mv = MultiverseAnalysis(
@@ -54,7 +74,7 @@ def test_MultiverseAnalysis_noteboook_simple():
 def test_CLI_simple():
     output_dir = get_temp_dir("test_CLI_simple")
     notebook = TEST_DIR / "notebooks" / "simple.ipynb"
-    config = TEST_DIR / "notebooks" / "simple.json"
+    config = TEST_DIR / "notebooks" / "simple_a.json"
 
     # Run a test multiverse analysis via the CLI
     os.system(

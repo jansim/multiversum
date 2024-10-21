@@ -7,6 +7,13 @@
 
 `multiversum` is a package designed to make it easy to conduct multiverse analyses in Python. The package is intended to seemlessly integrate into a normal analysis or ML workflow and can also be added to an existing pipeline.
 
+### Features
+
+- Simple 🧩: Multiversum is built with the goal of being as simple as possible to integrate into existing workflows.
+- Parallel 👯: Different universes are automatically evaluated in parallel.
+- Notebooks 📓: Analyses can be written as Jupyter notebooks.
+- Play/Pause ⏯️: Interrupt and then continue a multiverse analysis where you left it.
+
 ## Installation
 
 Install this library using `pip`:
@@ -16,7 +23,7 @@ pip install multiversum
 
 ## Usage
 
-The package always works with two different files: The `multiversum.toml` ✨️, specifying the different dimensions (and their options) and the `universe.ipynb` ⭐️ containing the actual analysis code. The universe file is then evaluated (in parallel) using different dimension-combinations.
+The package always works with two different files: The `multiversum.toml` ✨️, specifying the different dimensions (and their options) and the `universe.ipynb` ⭐️ containing the actual analysis code. The universe file is then evaluated (in parallel) using different dimension-combinations, by running `python -m multiversum`.
 
 An example using a machine learning workflow in scikit-learn can be found [here](./examples/scikit-learn--simple/).
 

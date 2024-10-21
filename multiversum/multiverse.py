@@ -200,7 +200,7 @@ class MultiverseAnalysis:
         all_universe_ids = set(multiverse_dict.keys())
 
         aggregated_data = self.aggregate_data(save=False)
-        universe_ids_with_data = set(aggregated_data["universe_id"])
+        universe_ids_with_data = set(aggregated_data["mv_universe_id"])
 
         missing_universe_ids = all_universe_ids - universe_ids_with_data
         extra_universe_ids = universe_ids_with_data - all_universe_ids

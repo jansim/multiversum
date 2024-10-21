@@ -16,7 +16,7 @@ pip install multiversum
 
 ## Usage
 
-The package always works with two different files: The `multiversum` ✨️, specifying the different dimensions (and their options) and the `universe` ⭐️ containing the actual analysis code. The universe file is then evaluated (in parallel) using different dimension-combinations.
+The package always works with two different files: The `multiversum.toml` ✨️, specifying the different dimensions (and their options) and the `universe.ipynb` ⭐️ containing the actual analysis code. The universe file is then evaluated (in parallel) using different dimension-combinations.
 
 An example using a machine learning workflow in scikit-learn can be found [here](./examples/scikit-learn--simple/).
 

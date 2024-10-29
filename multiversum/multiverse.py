@@ -60,6 +60,7 @@ class MultiverseAnalysis:
     - new_run: Whether this is a new run or not.
     - seed: The seed to use for the analysis.
     """
+
     grid = None
 
     def __init__(

@@ -18,6 +18,7 @@ def tqdm_joblib(tqdm_object):
     Yields:
         The tqdm progress bar object.
     """
+
     class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
         def __call__(self, *args, **kwargs):
             tqdm_object.update(n=self.batch_size)

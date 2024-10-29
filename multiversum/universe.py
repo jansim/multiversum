@@ -218,7 +218,7 @@ class Universe:
 
     def save_data(self, data: pd.DataFrame, add_info: bool = True) -> None:
         """
-        Save the data to a file.
+        Save the data to the appropriate file for this Universe.
 
         Args:
             data: The dataframe to be saved.

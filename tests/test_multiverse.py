@@ -254,7 +254,7 @@ def test_Universe_visit_sub_universe():
     y_test = pd.Series([0, 0, 1, 1])
     org_test = pd.DataFrame({"majmin": [0, 0, 1, 1]})
     sub_universe = {"cutoff": "raw_0.5", "eval_fairness_grouping": "majority-minority"}
-    filter_data = lambda sub_universe, org_test: pd.Series([True, True, True, True])
+    filter_data = lambda sub_universe, org_test: pd.Series([True, True, True, True])  # noqa: E731
     final_output = uv.visit_sub_universe(
         sub_universe, y_pred_prob, y_test, org_test, filter_data
     )
@@ -279,7 +279,7 @@ def test_Universe_compute_final_metrics():
     y_pred_prob = pd.Series([0.1, 0.4, 0.6, 0.9])
     y_test = pd.Series([0, 0, 1, 1])
     org_test = pd.DataFrame({"majmin": [0, 0, 1, 1]})
-    filter_data = lambda sub_universe, org_test: pd.Series([True, True, True, True])
+    filter_data = lambda sub_universe, org_test: pd.Series([True, True, True, True])  # noqa: E731
     final_output = uv.compute_final_metrics(
         y_pred_prob, y_test, org_test, filter_data, save=False
     )

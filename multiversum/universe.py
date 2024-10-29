@@ -26,7 +26,6 @@ def predict_w_threshold(probabilities: np.array, threshold: float) -> np.array:
     Returns:
         A numpy array containing the binary predictions.
     """
-
     # Expect 2 classes
     assert probabilities.shape[1] == 2
 
@@ -35,7 +34,8 @@ def predict_w_threshold(probabilities: np.array, threshold: float) -> np.array:
 
 
 def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFrame:
-    """Add values from a dictionary as columns to a dataframe.
+    """
+    Add values from a dictionary as columns to a dataframe.
 
     Args:
         df: The dataframe to which the columns should be added.
@@ -51,12 +51,12 @@ def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFram
 
 
 def flatten_dict(d: dict, parent_key="", sep="_") -> dict:
-    """Flatten a nested dictionary.
+    """
+    Flatten a nested dictionary.
 
     Args:
         d: The dictionary to be flattened.
-        parent_key: The parent key to be used for the flattened keys.
-            (optional)
+        parent_key: The parent key to be used for the flattened keys. (optional)
         sep: The separator to be used for the flattened keys. (optional)
 
     Returns:
@@ -76,7 +76,8 @@ def flatten_dict(d: dict, parent_key="", sep="_") -> dict:
 
 
 def list_wrap(value: Any) -> List[Any]:
-    """Wrap a value in a List if it is not already a list.
+    """
+    Wrap a value in a List if it is not already a list.
 
     Args:
         value: Any sort of value.
@@ -92,8 +93,9 @@ def list_wrap(value: Any) -> List[Any]:
 
 
 class Universe:
-    """A class to help with running the analysis of a single universe contained
-        within a multiverse analysis.
+    """
+    A class to help with running the analysis of a single universe contained
+    within a multiverse analysis.
 
     Attributes:
         run_no: The run number of the multiverse analysis.
@@ -189,7 +191,17 @@ class Universe:
     def _add_universe_info(
         self, data: pd.DataFrame, overwrite_dimensions: Optional[dict] = None
     ) -> pd.DataFrame:
-        # Add general unvierse / run info (to the front of the dataframe)
+        """
+        Add general universe / run info to the dataframe.
+
+        Args:
+            data: The dataframe to which the info should be added.
+            overwrite_dimensions: A dictionary containing dimensions to overwrite. (optional)
+
+        Returns:
+            The dataframe with the added info.
+        """
+        # Add general universe / run info (to the front of the dataframe)
         index = count()
         data.insert(next(index), "mv_universe_id", self.universe_id)
         data.insert(next(index), "mv_run_no", self.run_no)
@@ -205,6 +217,16 @@ class Universe:
         return data
 
     def save_data(self, data: pd.DataFrame, add_info: bool = True) -> None:
+        """
+        Save the data to a file.
+
+        Args:
+            data: The dataframe to be saved.
+            add_info: Whether to add universe info to the dataframe. (optional)
+
+        Returns:
+            None
+        """
         # Add universe data to the dataframe
         if add_info:
             data = self._add_universe_info(data=data)

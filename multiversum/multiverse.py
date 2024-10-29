@@ -48,6 +48,19 @@ class MissingUniverseInfo(TypedDict):
 
 
 class MultiverseAnalysis:
+    """
+    This class orchestrates a multiverse analysis.
+
+    Attributes:
+    - dimensions: A dictionary containing the dimensions of the multiverse.
+    - notebook: The Path to the notebook to run.
+    - config_file: A Path to a JSON file containing the dimensions.
+    - output_dir: The directory to store the output in.
+    - run_no: The number of the current run.
+    - new_run: Whether this is a new run or not.
+    - seed: The seed to use for the analysis.
+    """
+
     grid = None
 
     def __init__(
@@ -62,8 +75,6 @@ class MultiverseAnalysis:
     ) -> None:
         """
         Initializes a new MultiverseAnalysis instance.
-
-        This is a helper class to run a full multiverse analysis.
 
         Args:
         - dimensions: A dictionary containing the dimensions of the multiverse.
@@ -219,6 +230,15 @@ class MultiverseAnalysis:
         }
 
     def generate_universe_id(self, universe_parameters):
+        """
+        Generate a unique ID for a given universe.
+
+        Args:
+        - universe_parameters: A dictionary containing the parameters for the universe.
+
+        Returns:
+        - A unique ID for the universe.
+        """
         # Note: Getting stable hashes seems to be easier said than done in Python
         # See https://stackoverflow.com/questions/5884066/hashing-a-dictionary/22003440#22003440
         return md5(
@@ -226,6 +246,16 @@ class MultiverseAnalysis:
         ).hexdigest()
 
     def examine_multiverse(self, multiverse_grid=None, n_jobs=-2):
+        """
+        Run the analysis for all universes in the multiverse.
+
+        Args:
+        - multiverse_grid: A list of dictionaries containing the settings for different universes.
+        - n_jobs: The number of jobs to run in parallel. Defaults to -2 (all CPUs but one).
+
+        Returns:
+        - None
+        """
         if multiverse_grid is None:
             multiverse_grid = self.grid or self.generate_grid(save=False)
 

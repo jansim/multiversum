@@ -355,7 +355,12 @@ class Universe:
             )
 
     def visit_sub_universe(
-        self, sub_universe, y_pred_prob, y_test, org_test, filter_data
+        self,
+        sub_universe: Dict[str, Any],
+        y_pred_prob: pd.Series,
+        y_test: pd.Series,
+        org_test: pd.Series,
+        filter_data: Callable,
     ) -> pd.DataFrame:
         """
         Visit a sub-universe and compute the metrics for it.
@@ -425,7 +430,12 @@ class Universe:
         return generate_multiverse_grid(universe_all_lists)
 
     def compute_final_metrics(
-        self, y_pred_prob, y_test, org_test, filter_data, save=True
+        self,
+        y_pred_prob: pd.Series,
+        y_test: pd.Series,
+        org_test: pd.Series,
+        filter_data: Callable,
+        save: bool = True,
     ) -> pd.DataFrame:
         """
         Generate the final output for the given universe settings.

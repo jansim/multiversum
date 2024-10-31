@@ -9,4 +9,5 @@ venv
 .DS_Store
 dist
 build
+site
 **/output/

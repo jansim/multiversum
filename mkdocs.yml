@@ -2,6 +2,8 @@ site_name: "multiversum"
 theme:
   name: "material"
 
+repo_url: https://github.com/jansim/multiversum/
+
 plugins:
   - mkdocstrings:
       default_handler: python
@@ -16,3 +18,5 @@ nav:
   - API Reference:
       - Universe: "api/universe.md"
       - MultiverseAnalysis: "api/multiverse_analysis.md"
+  - Examples:
+      - "Scikit-Learn (Simple)": "https://github.com/jansim/multiversum/tree/main/examples/scikit-learn--simple"

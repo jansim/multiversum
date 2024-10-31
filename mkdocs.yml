@@ -1,6 +1,9 @@
 site_name: "multiversum"
 theme:
   name: "material"
+  palette:
+    primary: "blue"
+    accent: "light blue"
 
 repo_url: https://github.com/jansim/multiversum/
 

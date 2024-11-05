@@ -13,10 +13,10 @@
 
 ### Features
 
-- Simple 🧩: Built with the goal of being as simple as possible to integrate into existing workflows.
-- Parallel 👯: Different universes are automatically evaluated in parallel.
-- Notebooks 📓: Analyses can be written as Jupyter notebooks.
-- Play/Pause ⏯️: Interrupt and then continue a multiverse analysis where you left it.
+- **Simple** 🧩: Built with the goal of being as simple as possible to integrate into existing workflows.
+- **Parallel** 👯: Different universes are automatically evaluated in parallel.
+- **Notebooks** 📓: Analyses can be written as Jupyter notebooks.
+- **Play/Pause** ⏯️: Interrupt and then continue a multiverse analysis where you left it.
 
 ## Installation
 

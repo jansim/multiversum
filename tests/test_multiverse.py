@@ -1,4 +1,5 @@
 import pandas as pd
+import unittest
 from multiversum import generate_multiverse_grid, MultiverseAnalysis, Universe
 
 from pathlib import Path
@@ -24,86 +25,163 @@ def count_files(dir, glob):
     return len(list(dir.glob(glob)))
 
 
-def test_grid():
-    assert generate_multiverse_grid({"x": [1, 2], "y": [3, 4]}) == [
-        {"x": 1, "y": 3},
-        {"x": 1, "y": 4},
-        {"x": 2, "y": 3},
-        {"x": 2, "y": 4},
-    ]
+class TestGenerateMultiverseGrid(unittest.TestCase):
+    def test_grid(self):
+        assert generate_multiverse_grid({"x": [1, 2], "y": [3, 4]}) == [
+            {"x": 1, "y": 3},
+            {"x": 1, "y": 4},
+            {"x": 2, "y": 3},
+            {"x": 2, "y": 4},
+        ]
+
+    def test_edge_cases(self):
+        # Test with empty dimensions
+        self.assertRaises(ValueError, generate_multiverse_grid, {})
+
+        # Test with single dimension
+        assert generate_multiverse_grid({"x": [1, 2, 3]}) == [
+            {"x": 1},
+            {"x": 2},
+            {"x": 3},
+        ]
+
+        # Test with multiple dimensions with single value
+        assert generate_multiverse_grid({"x": [1], "y": [2], "z": [3]}) == [
+            {"x": 1, "y": 2, "z": 3}
+        ]
 
 
-def test_MultiverseAnalysis_config_json():
-    mv = MultiverseAnalysis(
-        config_file=TEST_DIR / "notebooks" / "simple_a.json", run_no=0
-    )
-    assert mv.dimensions == {
-        "x": ["A", "B"],
-        "y": ["A", "B"],
-    }
-
-
-def test_MultiverseAnalysis_config_toml():
-    mv = MultiverseAnalysis(
-        config_file=TEST_DIR / "notebooks" / "simple_b.toml", run_no=0
-    )
-    assert mv.dimensions == {
-        "x": ["B", "C"],
-        "y": ["B", "C"],
-    }
-
-
-def test_MultiverseAnalysis_noteboook_simple():
-    output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
-    mv = MultiverseAnalysis(
-        {
+class TestMultiverseAnalysis(unittest.TestCase):
+    def test_config_json(self):
+        mv = MultiverseAnalysis(
+            config_file=TEST_DIR / "notebooks" / "simple_a.json", run_no=0
+        )
+        assert mv.dimensions == {
             "x": ["A", "B"],
             "y": ["A", "B"],
-        },
-        notebook=TEST_DIR / "notebooks" / "simple.ipynb",
-        output_dir=output_dir,
-    )
-    mv.examine_multiverse()
+        }
 
-    # Check whether all expected files are there
-    assert count_files(output_dir, "runs/1/data/*.csv") == 4
-    assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
-    assert count_files(output_dir, "counter.txt") == 1
+    def test_config_toml(self):
+        mv = MultiverseAnalysis(
+            config_file=TEST_DIR / "notebooks" / "simple_b.toml", run_no=0
+        )
+        assert mv.dimensions == {
+            "x": ["B", "C"],
+            "y": ["B", "C"],
+        }
 
-
-def test_CLI_simple():
-    output_dir = get_temp_dir("test_CLI_simple")
-    notebook = TEST_DIR / "notebooks" / "simple.ipynb"
-    config = TEST_DIR / "notebooks" / "simple_a.json"
-
-    # Run a test multiverse analysis via the CLI
-    os.system(
-        f"python -m multiversum --notebook {notebook} --config {config} --output-dir {output_dir}"
-    )
-
-    # Check whether all expected files are there
-    assert count_files(output_dir, "runs/1/data/*.csv.gz") == 1
-    assert count_files(output_dir, "runs/1/data/*.csv") == 4
-    assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
-    assert count_files(output_dir, "counter.txt") == 1
-    assert count_files(output_dir, "multiverse_grid.json") == 1
-
-
-def test_Universe_add_universe_info():
-    uv = Universe(settings={"dimensions": {"hello": "world"}})
-
-    df = uv._add_universe_info(pd.DataFrame({"test_value": [42]}))
-    # Drop execution time because it will always change
-    df.drop(["mv_execution_time"], axis="columns", inplace=True)
-
-    pd.testing.assert_frame_equal(
-        df,
-        pd.DataFrame(
+    def test_noteboook_simple(self):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
+        mv = MultiverseAnalysis(
             {
-                "mv_universe_id": ["no-universe-id-provided"],
-                "mv_run_no": 0,
-                "mv_dim_hello": "world",
-                "test_value": 42,
-            }
-        ),
-    )
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            output_dir=output_dir,
+        )
+        mv.examine_multiverse()
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "counter.txt") == 1
+
+        # Check whether data aggregation works
+        aggregated_data = mv.aggregate_data(save=False)
+        assert not aggregated_data.empty
+        assert "value" in aggregated_data.columns
+
+        # Check whether missing universes remain
+        missing_info = mv.check_missing_universes()
+        assert len(missing_info["missing_universe_ids"]) == 0
+        assert len(missing_info["extra_universe_ids"]) == 0
+
+    def test_generate_universe_id(self):
+        universe_id = MultiverseAnalysis.generate_universe_id({"x": "A", "y": "B"})
+        assert universe_id == "47899ae546a9854ebfe2de7396eff9fa"
+
+    def test_generate_universe_id_order_invariance(self):
+        assert MultiverseAnalysis.generate_universe_id(
+            {"x": "A", "y": "B"}
+        ) == MultiverseAnalysis.generate_universe_id({"y": "B", "x": "A"})
+
+    def test_visit_universe(self):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_visit_universe")
+        mv = MultiverseAnalysis(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            output_dir=output_dir,
+        )
+        mv.visit_universe({"x": "A", "y": "B"})
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 1
+
+
+class TestUniverse(unittest.TestCase):
+    def test_add_universe_info(self):
+        uv = Universe(settings={"dimensions": {"hello": "world"}})
+
+        df = uv._add_universe_info(pd.DataFrame({"test_value": [42]}))
+        # Drop execution time because it will always change
+        df.drop(["mv_execution_time"], axis="columns", inplace=True)
+
+        pd.testing.assert_frame_equal(
+            df,
+            pd.DataFrame(
+                {
+                    "mv_universe_id": ["no-universe-id-provided"],
+                    "mv_run_no": 0,
+                    "mv_dim_hello": "world",
+                    "test_value": 42,
+                }
+            ),
+        )
+
+    def test_get_execution_time(self):
+        uv = Universe(settings={"dimensions": {"hello": "world"}})
+        execution_time = uv.get_execution_time()
+        assert execution_time >= 0
+
+    def test_save_data(self):
+        output_dir = get_temp_dir("test_Universe_save_data")
+        uv = Universe(
+            settings={"dimensions": {"hello": "world"}, "output_dir": str(output_dir)}
+        )
+        data = pd.DataFrame({"test_value": [42]})
+        uv.save_data(data)
+        assert count_files(output_dir, "runs/0/data/*.csv") == 1
+
+    def test_generate_sub_universes(self):
+        uv = Universe(
+            settings={"dimensions": {"x": ["A", "B"], "y": ["A", "B"], "z": "C"}}
+        )
+        sub_universes = uv.generate_sub_universes()
+        assert len(sub_universes) == 4
+        assert sub_universes == [
+            {"x": "A", "y": "A", "z": "C"},
+            {"x": "A", "y": "B", "z": "C"},
+            {"x": "B", "y": "A", "z": "C"},
+            {"x": "B", "y": "B", "z": "C"},
+        ]
+
+
+class TestCLI(unittest.TestCase):
+    def test_simple(self):
+        output_dir = get_temp_dir("test_CLI_simple")
+        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
+        config = TEST_DIR / "notebooks" / "simple_a.json"
+
+        # Run a test multiverse analysis via the CLI
+        os.system(
+            f"python -m multiversum --notebook {notebook} --config {config} --output-dir {output_dir}"
+        )
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv.gz") == 1
+        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "counter.txt") == 1
+        assert count_files(output_dir, "multiverse_grid.json") == 1

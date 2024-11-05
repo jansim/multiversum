@@ -35,6 +35,8 @@ def generate_multiverse_grid(dimensions: Dict[str, List[str]]):
     Returns:
     - A list of dicts containing all different combinations of the options.
     """
+    if not dimensions:
+        raise ValueError("No (or empty) dimensions provided.")
     # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     keys, values = zip(*dimensions.items())
     multiverse_grid = [dict(zip(keys, v)) for v in itertools.product(*values)]

@@ -220,7 +220,8 @@ class MultiverseAnalysis:
             "missing_universes": missing_universes,
         }
 
-    def generate_universe_id(self, universe_parameters):
+    @staticmethod
+    def generate_universe_id(universe_parameters):
         # Note: Getting stable hashes seems to be easier said than done in Python
         # See https://stackoverflow.com/questions/5884066/hashing-a-dictionary/22003440#22003440
         return md5(

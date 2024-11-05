@@ -87,61 +87,24 @@ class TestMultiverseAnalysis(unittest.TestCase):
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
         assert count_files(output_dir, "counter.txt") == 1
 
-    def test_aggregate_data(self):
-        output_dir = get_temp_dir("test_MultiverseAnalysis_aggregate_data")
-        mv = MultiverseAnalysis(
-            {
-                "x": ["A", "B"],
-                "y": ["A", "B"],
-            },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
-            output_dir=output_dir,
-        )
-        mv.examine_multiverse()
+        # Check whether data aggregation works
         aggregated_data = mv.aggregate_data(save=False)
         assert not aggregated_data.empty
         assert "value" in aggregated_data.columns
 
-    def test_check_missing_universes(self):
-        output_dir = get_temp_dir("test_MultiverseAnalysis_check_missing_universes")
-        mv = MultiverseAnalysis(
-            {
-                "x": ["A", "B"],
-                "y": ["A", "B"],
-            },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
-            output_dir=output_dir,
-        )
-        mv.examine_multiverse()
+        # Check whether missing universes remain
         missing_info = mv.check_missing_universes()
         assert len(missing_info["missing_universe_ids"]) == 0
         assert len(missing_info["extra_universe_ids"]) == 0
 
     def test_generate_universe_id(self):
-        mv = MultiverseAnalysis(
-            {
-                "x": ["A", "B"],
-                "y": ["A", "B"],
-            },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
-            output_dir=get_temp_dir("test_MultiverseAnalysis_generate_universe_id"),
-        )
-        universe_id = mv.generate_universe_id({"x": "A", "y": "B"})
+        universe_id = MultiverseAnalysis.generate_universe_id({"x": "A", "y": "B"})
         assert universe_id == "47899ae546a9854ebfe2de7396eff9fa"
 
-    def test_examine_multiverse(self):
-        output_dir = get_temp_dir("test_MultiverseAnalysis_examine_multiverse")
-        mv = MultiverseAnalysis(
-            {
-                "x": ["A", "B"],
-                "y": ["A", "B"],
-            },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
-            output_dir=output_dir,
-        )
-        mv.examine_multiverse()
-        assert count_files(output_dir, "runs/1/data/*.csv") == 4
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+    def test_generate_universe_id_order_invariance(self):
+        assert MultiverseAnalysis.generate_universe_id(
+            {"x": "A", "y": "B"}
+        ) == MultiverseAnalysis.generate_universe_id({"y": "B", "x": "A"})
 
     def test_visit_universe(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_visit_universe")
@@ -192,14 +155,16 @@ class TestUniverse(unittest.TestCase):
         assert count_files(output_dir, "runs/0/data/*.csv") == 1
 
     def test_generate_sub_universes(self):
-        uv = Universe(settings={"dimensions": {"x": ["A", "B"], "y": ["A", "B"]}})
+        uv = Universe(
+            settings={"dimensions": {"x": ["A", "B"], "y": ["A", "B"], "z": "C"}}
+        )
         sub_universes = uv.generate_sub_universes()
         assert len(sub_universes) == 4
         assert sub_universes == [
-            {"x": "A", "y": "A"},
-            {"x": "A", "y": "B"},
-            {"x": "B", "y": "A"},
-            {"x": "B", "y": "B"},
+            {"x": "A", "y": "A", "z": "C"},
+            {"x": "A", "y": "B", "z": "C"},
+            {"x": "B", "y": "A", "z": "C"},
+            {"x": "B", "y": "B", "z": "C"},
         ]
 
 

@@ -30,3 +30,7 @@ pip install multiversum
 The package always works with two different files: The `multiverse.toml` ✨️, specifying the different dimensions (and their options) and the `universe.ipynb` ⭐️ containing the actual analysis code. The universe file is then evaluated (in parallel) using different dimension-combinations, by running `python -m multiversum`.
 
 An example using a machine learning workflow in scikit-learn can be found [here](../examples/scikit-learn--simple/).
+
+## Getting Started
+
+To quickly get started with running your own multiverse analysis, you can use the [multiversum starter template](https://github.com/jansim/multiversum-template).

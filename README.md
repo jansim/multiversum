@@ -31,6 +31,10 @@ The package always works with two different files: The `multiverse.toml` ✨️,
 
 An example using a machine learning workflow in scikit-learn can be found [here](./examples/scikit-learn--simple/).
 
+## Getting Started
+
+To quickly get started with running your own multiverse analysis, you can use the [multiversum starter template](https://github.com/jansim/multiversum-template).
+
 ## Development
 
 To contribute to this library, first checkout the code. Then create a new virtual environment:

@@ -10,6 +10,12 @@ DEFAULT_CONFIG_FILE = "multiversum.toml"
 def run_cli(dimensions: Optional[dict] = None) -> None:
     """Run a multiverse analysis from the command line.
 
+    You will only need to use this function if you want to directly pass in
+    dimensions from within Python (e.g. if you generate dimensions via code).
+
+    To run the CLI without providing dimensions, simply run
+    `python -m multiversum`.
+
     Args:
         dimensions (dict, optional): Manually specify dimensions. Set to None to
             use normal default / allow specification as an argument.

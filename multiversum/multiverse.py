@@ -110,6 +110,8 @@ class MultiverseAnalysis:
 
         self.notebook = notebook
         self.output_dir = output_dir
+        if self.output_dir is not None:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
         self.seed = seed
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)

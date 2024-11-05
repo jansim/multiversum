@@ -4,7 +4,7 @@ from typing import Optional
 
 from .multiverse import DEFAULT_SEED, MultiverseAnalysis
 
-DEFAULT_CONFIG_FILE = "multiversum.toml"
+DEFAULT_CONFIG_FILE = "multiverse.toml"
 
 
 def run_cli(dimensions: Optional[dict] = None) -> None:

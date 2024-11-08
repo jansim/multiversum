@@ -41,13 +41,9 @@ class TestGenerateMultiverseGrid:
         with pytest.raises(ValueError):
             generate_multiverse_grid({})
         with pytest.raises(AssertionError):
-            generate_multiverse_grid({
-                "x": "hello"
-            })
+            generate_multiverse_grid({"x": "hello"})
         with pytest.raises(AssertionError):
-            generate_multiverse_grid({
-                12: [1, 2, 3]
-            })
+            generate_multiverse_grid({12: [1, 2, 3]})
         # Test with single dimension
         assert generate_multiverse_grid({"x": [1, 2, 3]}) == [
             {"x": 1},

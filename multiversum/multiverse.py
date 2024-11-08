@@ -12,7 +12,7 @@ import warnings
 import pandas as pd
 import papermill as pm
 from tqdm import tqdm
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, cpu_count
 from .parallel import tqdm_joblib
 from .logger import logger
 
@@ -273,9 +273,11 @@ class MultiverseAnalysis:
 
         # Run analysis for all universes
         if n_jobs == 1:
+            logger.info("Running in single-threaded mode (njobs = 1).")
             for universe_params in tqdm(multiverse_grid, desc="Visiting Universes"):
                 self.visit_universe(universe_params)
         else:
+            logger.info(f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected).")
             with tqdm_joblib(
                 tqdm(desc="Visiting Universes", total=len(multiverse_grid))
             ) as progress_bar:  # noqa: F841

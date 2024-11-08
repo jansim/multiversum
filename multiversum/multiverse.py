@@ -38,8 +38,12 @@ def generate_multiverse_grid(dimensions: Dict[str, List[str]]) -> List[Dict[str,
     """
     if not dimensions:
         raise ValueError("No (or empty) dimensions provided.")
-    # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
+
     keys, values = zip(*dimensions.items())
+    assert all(isinstance(k, str) for k in keys)
+    assert all(isinstance(v, list) for v in values)
+
+    # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     multiverse_grid = [dict(zip(keys, v)) for v in itertools.product(*values)]
     return multiverse_grid
 

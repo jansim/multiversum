@@ -396,5 +396,9 @@ def execute_notebook_via_api(
         None
     """
     pm.execute_notebook(
-        input_path, output_path, parameters=parameters, progress_bar=False
+        input_path,
+        output_path,
+        parameters=parameters,
+        progress_bar=False,
+        kernel_manager_class="multiversum.IPCKernelManager.IPCKernelManager",
     )

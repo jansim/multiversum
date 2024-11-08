@@ -1,5 +1,7 @@
+import logging
 import pandas as pd
-import unittest
+
+import pytest
 from multiversum import generate_multiverse_grid, MultiverseAnalysis, Universe
 
 from pathlib import Path
@@ -25,7 +27,7 @@ def count_files(dir, glob):
     return len(list(dir.glob(glob)))
 
 
-class TestGenerateMultiverseGrid(unittest.TestCase):
+class TestGenerateMultiverseGrid:
     def test_grid(self):
         assert generate_multiverse_grid({"x": [1, 2], "y": [3, 4]}) == [
             {"x": 1, "y": 3},
@@ -36,7 +38,8 @@ class TestGenerateMultiverseGrid(unittest.TestCase):
 
     def test_edge_cases(self):
         # Test with empty dimensions
-        self.assertRaises(ValueError, generate_multiverse_grid, {})
+        with pytest.raises(ValueError):
+            generate_multiverse_grid({})
 
         # Test with single dimension
         assert generate_multiverse_grid({"x": [1, 2, 3]}) == [
@@ -51,7 +54,7 @@ class TestGenerateMultiverseGrid(unittest.TestCase):
         ]
 
 
-class TestMultiverseAnalysis(unittest.TestCase):
+class TestMultiverseAnalysis:
     def test_config_json(self):
         mv = MultiverseAnalysis(
             config_file=TEST_DIR / "notebooks" / "simple_a.json", run_no=0
@@ -97,6 +100,38 @@ class TestMultiverseAnalysis(unittest.TestCase):
         assert len(missing_info["missing_universe_ids"]) == 0
         assert len(missing_info["extra_universe_ids"]) == 0
 
+    def test_noteboook_error(self, caplog):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_error")
+        mv = MultiverseAnalysis(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            notebook=TEST_DIR / "notebooks" / "error.ipynb",
+            output_dir=output_dir,
+        )
+        mv.stop_on_error = False
+        with caplog.at_level(logging.ERROR, logger="multiversum"):
+            # Important: Logs are only captured correctly when *not* running in parallel
+            mv.examine_multiverse(n_jobs=1)
+
+        error_msg_count = 0
+        for record in caplog.records:
+            message = record.getMessage().lower()
+            if "error in universe" in message:
+                error_msg_count += 1
+        assert error_msg_count == 2
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv") == 2
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "counter.txt") == 1
+
+        # Check whether missing universes remain
+        missing_info = mv.check_missing_universes()
+        assert len(missing_info["missing_universe_ids"]) == 2
+        assert len(missing_info["extra_universe_ids"]) == 0
+
     def test_generate_universe_id(self):
         universe_id = MultiverseAnalysis.generate_universe_id({"x": "A", "y": "B"})
         assert universe_id == "47899ae546a9854ebfe2de7396eff9fa"
@@ -120,7 +155,7 @@ class TestMultiverseAnalysis(unittest.TestCase):
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 1
 
 
-class TestUniverse(unittest.TestCase):
+class TestUniverse:
     def test_add_universe_info(self):
         uv = Universe(settings={"dimensions": {"hello": "world"}})
 
@@ -168,7 +203,7 @@ class TestUniverse(unittest.TestCase):
         ]
 
 
-class TestCLI(unittest.TestCase):
+class TestCLI:
     def test_simple(self):
         output_dir = get_temp_dir("test_CLI_simple")
         notebook = TEST_DIR / "notebooks" / "simple.ipynb"

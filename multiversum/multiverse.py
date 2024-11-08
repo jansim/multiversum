@@ -62,8 +62,17 @@ class MultiverseAnalysis:
         run_no: The number of the current run.
         new_run: Whether this is a new run or not.
         seed: The seed to use for the analysis.
+        stop_on_error: Whether to stop the analysis if an error occurs.
     """
 
+    dimensions = None
+    notebook = None
+    config_file = None
+    output_dir = None
+    run_no = None
+    new_run = None
+    seed = None
+    stop_on_error = None
     grid = None
     stop_on_error = True
 
@@ -124,7 +133,7 @@ class MultiverseAnalysis:
 
         if self.dimensions is None:
             raise ValueError(
-                "Dimensions need to be specified either directly or in config."
+                "Dimensions need to be specified either directly or in a config."
             )
 
     def get_run_dir(self, sub_directory: Optional[str] = None) -> Path:

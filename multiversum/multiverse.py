@@ -65,6 +65,7 @@ class MultiverseAnalysis:
     """
 
     grid = None
+    stop_on_error = True
 
     def __init__(
         self,
@@ -105,6 +106,9 @@ class MultiverseAnalysis:
             if "dimensions" in config:
                 assert dimensions is None
                 self.dimensions = config["dimensions"]
+
+            if "stop_on_error" in config:
+                self.stop_on_error = config["stop_on_error"]
 
         if dimensions is not None:
             self.dimensions = dimensions
@@ -317,13 +321,20 @@ class MultiverseAnalysis:
         }
         settings_str = json.dumps(settings, sort_keys=True)
 
-        execute_notebook_via_api(
-            input_path=str(self.notebook),
-            output_path=str(output_dir / output_filename),
-            parameters={
-                "settings": settings_str,
-            },
-        )
+        try:
+            execute_notebook_via_api(
+                input_path=str(self.notebook),
+                output_path=str(output_dir / output_filename),
+                parameters={
+                    "settings": settings_str,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Error in universe {universe_id} ({output_filename})")
+            if self.stop_on_error:
+                raise e
+            else:
+                logger.exception(e)
 
 
 def execute_notebook_via_cli(

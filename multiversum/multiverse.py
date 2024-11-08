@@ -267,15 +267,19 @@ class MultiverseAnalysis:
             multiverse_grid = self.grid or self.generate_grid(save=False)
 
         # Run analysis for all universes
-        with tqdm_joblib(
-            tqdm(desc="Visiting Universes", total=len(multiverse_grid))
-        ) as progress_bar:  # noqa: F841
-            # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
-            # Thus for n_jobs = -2, all CPUs but one are used
-            Parallel(n_jobs=n_jobs)(
-                delayed(self.visit_universe)(universe_params)
-                for universe_params in multiverse_grid
-            )
+        if n_jobs == 1:
+            for universe_params in tqdm(multiverse_grid, desc="Visiting Universes"):
+                self.visit_universe(universe_params)
+        else:
+            with tqdm_joblib(
+                tqdm(desc="Visiting Universes", total=len(multiverse_grid))
+            ) as progress_bar:  # noqa: F841
+                # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
+                # Thus for n_jobs = -2, all CPUs but one are used
+                Parallel(n_jobs=n_jobs)(
+                    delayed(self.visit_universe)(universe_params)
+                    for universe_params in multiverse_grid
+                )
 
     def visit_universe(self, universe_dimensions: Dict[str, str]) -> None:
         """

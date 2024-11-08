@@ -14,6 +14,7 @@ import papermill as pm
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from .parallel import tqdm_joblib
+from .logger import logger
 
 import sys
 
@@ -297,6 +298,7 @@ class MultiverseAnalysis:
         """
         # Generate universe ID
         universe_id = self.generate_universe_id(universe_dimensions)
+        logger.debug(f"Visiting universe: {universe_id}")
 
         # Generate final command
         output_dir = self.get_run_dir(sub_directory="notebooks")

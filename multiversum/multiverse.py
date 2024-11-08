@@ -350,11 +350,11 @@ def execute_notebook_via_cli(
         call_params.append(key)
         call_params.append(value)
 
-    print(" ".join(call_params))
+    logger.info(" ".join(call_params))
     # Call papermill render
     process = subprocess.run(call_params, capture_output=True, text=True)
-    print(process.stdout)
-    print(process.stderr)
+    logger.info(process.stdout)
+    logger.info(process.stderr)
 
 
 def execute_notebook_via_api(

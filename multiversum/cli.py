@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from .multiverse import DEFAULT_SEED, MultiverseAnalysis
+from .logger import logger
 
 DEFAULT_CONFIG_FILE = "multiverse.toml"
 
@@ -76,6 +77,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         type=int,
     )
     args = parser.parse_args()
+    logger.debug(f"Parsed arguments: {args}")
 
     if args.config is not None:
         config_file = Path(args.config)
@@ -94,22 +96,22 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
     )
 
     multiverse_grid = multiverse_analysis.generate_grid(save=True)
-    print(f"Generated N = {len(multiverse_grid)} universes")
+    logger.info(f"Generated N = {len(multiverse_grid)} universes")
 
-    print(
+    logger.info(
         f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed}) ~"
     )
 
     # Run the analysis for the first universe
     if args.mode == "test":
-        print("Small-Scale-Test Run")
+        logger.info("Test Run")
         multiverse_analysis.visit_universe(multiverse_grid[0])
         if len(multiverse_grid) > 1:
             multiverse_analysis.visit_universe(
                 multiverse_grid[len(multiverse_grid) - 1]
             )
     elif args.mode == "continue":
-        print("Continuing Previous Run")
+        logger.info("Continuing Previous Run")
         missing_universes = multiverse_analysis.check_missing_universes()[
             "missing_universes"
         ]
@@ -117,7 +119,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         # Run analysis only for missing universes
         multiverse_analysis.examine_multiverse(multiverse_grid=missing_universes)
     else:
-        print("Full Run")
+        logger.info("Full Run")
         # Run analysis for all universes
         multiverse_analysis.examine_multiverse(multiverse_grid=multiverse_grid)
 

@@ -277,7 +277,9 @@ class MultiverseAnalysis:
             for universe_params in tqdm(multiverse_grid, desc="Visiting Universes"):
                 self.visit_universe(universe_params)
         else:
-            logger.info(f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected).")
+            logger.info(
+                f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
+            )
             with tqdm_joblib(
                 tqdm(desc="Visiting Universes", total=len(multiverse_grid))
             ) as progress_bar:  # noqa: F841

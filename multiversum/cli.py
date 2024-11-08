@@ -49,7 +49,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
     parser.add_argument(
         "--config",
         help=(
-            "Relative path to a JSON file with a config for the multiverse."
+            "Relative path to a TOML or JSON file with a config for the multiverse."
             f"Defaults to {DEFAULT_CONFIG_FILE}."
         ),
         default=None,

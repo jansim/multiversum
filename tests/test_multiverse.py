@@ -223,3 +223,22 @@ class TestCLI:
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
         assert count_files(output_dir, "counter.txt") == 1
         assert count_files(output_dir, "multiverse_grid.json") == 1
+
+    def test_multiverse_py_empty(self):
+        output_dir = get_temp_dir("test_multiverse_py_empty")
+        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
+
+        # Run a test multiverse analysis via the CLI
+        wd = os.getcwd()
+        os.chdir(TEST_DIR / "notebooks")
+        os.system(
+            f"python -m multiversum --notebook {notebook} --output-dir {output_dir}"
+        )
+        os.chdir(wd)
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv.gz") == 0
+        assert count_files(output_dir, "runs/1/data/*.csv") == 0
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 0
+        assert count_files(output_dir, "counter.txt") == 0
+        assert count_files(output_dir, "multiverse_grid.json") == 0

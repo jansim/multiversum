@@ -1,11 +1,13 @@
 import argparse
 from pathlib import Path
+import runpy
 from typing import Optional
 
 from .multiverse import DEFAULT_SEED, MultiverseAnalysis
 from .logger import logger
 
 DEFAULT_CONFIG_FILE = "multiverse.toml"
+DEFAULT_PYTHON_SCRIPT_NAME = "multiverse.py"
 
 
 def run_cli(dimensions: Optional[dict] = None) -> None:
@@ -60,7 +62,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         "--notebook",
         help=("Relative path to the notebook to run."),
         default="./universe.ipynb",
-        type=verify_file,
+        type=str,
     )
 
     parser.add_argument(
@@ -85,6 +87,17 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         config_file = Path(DEFAULT_CONFIG_FILE)
     else:
         config_file = None
+
+    if config_file is None and dimensions is None:
+        # Check whether multiverse.py might exist and run it
+        if Path(DEFAULT_PYTHON_SCRIPT_NAME).is_file():
+            logger.info(
+                f"Detected {DEFAULT_PYTHON_SCRIPT_NAME}. Running it.\n"
+                f"Please create a {DEFAULT_CONFIG_FILE}, if you don't want to run the script."
+            )
+
+            runpy.run_path(DEFAULT_PYTHON_SCRIPT_NAME)
+            return
 
     multiverse_analysis = MultiverseAnalysis(
         dimensions=dimensions,

@@ -66,6 +66,7 @@ class MultiverseAnalysis:
         run_no: The number of the current run.
         new_run: Whether this is a new run or not.
         seed: The seed to use for the analysis.
+        cell_timeout: A timeout (in seconds) for each cell in the notebook.
         stop_on_error: Whether to stop the analysis if an error occurs.
     """
 
@@ -78,6 +79,7 @@ class MultiverseAnalysis:
     seed = None
     stop_on_error = None
     grid = None
+    cell_timeout = None
     stop_on_error = True
 
     def __init__(
@@ -207,9 +209,13 @@ class MultiverseAnalysis:
             A pandas DataFrame containing the aggregated data from all universes.
         """
         data_dir = self.get_run_dir(sub_directory="data")
-        csv_files = data_dir.glob("*.csv")
+        csv_files = list(data_dir.glob("*.csv"))
 
-        df = pd.concat((pd.read_csv(f) for f in csv_files), ignore_index=True)
+        if len(csv_files) == 0:
+            logger.warning("No data files to aggregate, returning empty dataframe.")
+            df = pd.DataFrame({"mv_universe_id": []})
+        else:
+            df = pd.concat((pd.read_csv(f) for f in csv_files), ignore_index=True)
 
         if save:
             df.to_csv(data_dir / ("agg_" + str(self.run_no) + "_run_outputs.csv.gz"))
@@ -339,7 +345,7 @@ class MultiverseAnalysis:
         settings_str = json.dumps(settings, sort_keys=True)
 
         try:
-            execute_notebook_via_api(
+            self.execute_notebook_via_api(
                 input_path=str(self.notebook),
                 output_path=str(output_dir / output_filename),
                 parameters={
@@ -353,56 +359,59 @@ class MultiverseAnalysis:
             else:
                 logger.exception(e)
 
+    def execute_notebook_via_cli(
+        self, input_path: str, output_path: str, parameters: Dict[str, str]
+    ):
+        """
+        Executes a notebook via the papermill command line interface.
 
-def execute_notebook_via_cli(
-    input_path: str, output_path: str, parameters: Dict[str, str]
-):
-    """
-    Executes a notebook via the papermill command line interface.
+        Args:
+            input_path: The path to the input notebook.
+            output_path: The path to the output notebook.
+            parameters: A dictionary containing the parameters for the notebook.
 
-    Args:
-        input_path: The path to the input notebook.
-        output_path: The path to the output notebook.
-        parameters: A dictionary containing the parameters for the notebook.
+        Returns:
+            None
+        """
+        call_params = [
+            "papermill",
+            input_path,
+            output_path,
+        ]
+        if self.cell_timeout is not None:
+            call_params.append("--execution-timeout")
+            call_params.append(str(self.cell_timeout))
 
-    Returns:
-        None
-    """
-    call_params = [
-        "papermill",
-        input_path,
-        output_path,
-    ]
-    for key, value in parameters.items():
-        call_params.append("-p")
-        call_params.append(key)
-        call_params.append(value)
+        for key, value in parameters.items():
+            call_params.append("-p")
+            call_params.append(key)
+            call_params.append(value)
 
-    logger.info(" ".join(call_params))
-    # Call papermill render
-    process = subprocess.run(call_params, capture_output=True, text=True)
-    logger.info(process.stdout)
-    logger.info(process.stderr)
+        logger.info(" ".join(call_params))
+        # Call papermill render
+        process = subprocess.run(call_params, capture_output=True, text=True)
+        logger.info(process.stdout)
+        logger.info(process.stderr)
 
+    def execute_notebook_via_api(
+        self, input_path: str, output_path: str, parameters: Dict[str, str]
+    ):
+        """
+        Executes a notebook via the papermill python API.
 
-def execute_notebook_via_api(
-    input_path: str, output_path: str, parameters: Dict[str, str]
-):
-    """
-    Executes a notebook via the papermill python API.
+        Args:
+            input_path: The path to the input notebook.
+            output_path: The path to the output notebook.
+            parameters: A dictionary containing the parameters for the notebook.
 
-    Args:
-        input_path: The path to the input notebook.
-        output_path: The path to the output notebook.
-        parameters: A dictionary containing the parameters for the notebook.
-
-    Returns:
-        None
-    """
-    pm.execute_notebook(
-        input_path,
-        output_path,
-        parameters=parameters,
-        progress_bar=False,
-        kernel_manager_class="multiversum.IPCKernelManager.IPCKernelManager",
-    )
+        Returns:
+            None
+        """
+        pm.execute_notebook(
+            input_path,
+            output_path,
+            parameters=parameters,
+            progress_bar=False,
+            kernel_manager_class="multiversum.IPCKernelManager.IPCKernelManager",
+            execution_timeout=self.cell_timeout,
+        )

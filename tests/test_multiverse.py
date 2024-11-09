@@ -135,6 +135,30 @@ class TestMultiverseAnalysis:
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 
+    def test_noteboook_timeout(self):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_timeout")
+        mv = MultiverseAnalysis(
+            {
+                "x": ["A", "B"],
+                "y": ["A"],
+            },
+            notebook=TEST_DIR / "notebooks" / "slow.ipynb",
+            output_dir=output_dir,
+        )
+        mv.cell_timeout = 1
+        with pytest.raises(TimeoutError):
+            mv.examine_multiverse()
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv") == 0
+        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 2
+        assert count_files(output_dir, "counter.txt") == 1
+
+        # Check whether missing universes remain
+        missing_info = mv.check_missing_universes()
+        assert len(missing_info["missing_universe_ids"]) == 2
+        assert len(missing_info["extra_universe_ids"]) == 0
+
     def test_generate_universe_id(self):
         universe_id = MultiverseAnalysis.generate_universe_id({"x": "A", "y": "B"})
         assert universe_id == "47899ae546a9854ebfe2de7396eff9fa"

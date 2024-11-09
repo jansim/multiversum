@@ -1,11 +1,11 @@
 import os
 import uuid
 
-from jupyter_client.manager import KernelManager
+from jupyter_client.manager import AsyncKernelManager
 from jupyter_core.paths import jupyter_runtime_dir
 
 
-class IPCKernelManager(KernelManager):
+class IPCKernelManager(AsyncKernelManager):
     def __init__(self, *args, **kwargs):
         kernel_id = str(uuid.uuid4())
         os.makedirs(jupyter_runtime_dir(), exist_ok=True)

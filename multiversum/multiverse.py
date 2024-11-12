@@ -77,7 +77,6 @@ class MultiverseAnalysis:
     run_no = None
     new_run = None
     seed = None
-    stop_on_error = None
     grid = None
     cell_timeout = None
     stop_on_error = True

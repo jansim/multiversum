@@ -66,8 +66,8 @@ class MultiverseAnalysis:
         run_no: The number of the current run.
         new_run: Whether this is a new run or not.
         seed: The seed to use for the analysis.
-        cell_timeout: A timeout (in seconds) for each cell in the notebook.
         stop_on_error: Whether to stop the analysis if an error occurs.
+        cell_timeout: A timeout (in seconds) for each cell in the notebook.
     """
 
     dimensions = None
@@ -90,6 +90,8 @@ class MultiverseAnalysis:
         run_no: Optional[int] = None,
         new_run: bool = True,
         seed: Optional[int] = DEFAULT_SEED,
+        stop_on_error: bool = True,
+        cell_timeout: Optional[int] = None,
     ) -> None:
         """
         Initializes a new MultiverseAnalysis instance.
@@ -106,6 +108,8 @@ class MultiverseAnalysis:
                 new_run is False.
             new_run: Whether this is a new run or not. Defaults to True.
             seed: The seed to use for the analysis.
+            stop_on_error: Whether to stop the analysis if an error occurs.
+            cell_timeout: A timeout (in seconds) for each cell in the notebook.
         """
         if isinstance(config_file, Path):
             if config_file.suffix == ".toml":
@@ -135,6 +139,8 @@ class MultiverseAnalysis:
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )
+        self.stop_on_error = stop_on_error
+        self.cell_timeout = cell_timeout
 
         if self.dimensions is None:
             raise ValueError(

@@ -1,6 +1,6 @@
 [project]
 name = "multiversum"
-version = "0.2.4"
+version = "0.2.5"
 description = "A helper package to conduct multiverse analyses in Python"
 readme = "README.md"
 requires-python = ">=3.8"

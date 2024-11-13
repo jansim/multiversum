@@ -9,9 +9,9 @@ import pandas as pd
 import json
 import numpy as np
 import warnings
-from itertools import count
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
+from .helpers import add_universe_info_to_df
 from .multiverse import generate_multiverse_grid
 
 
@@ -201,20 +201,15 @@ class Universe:
         Returns:
             The dataframe with the added info.
         """
-        # Add general universe / run info (to the front of the dataframe)
-        index = count()
-        data.insert(next(index), "mv_universe_id", self.universe_id)
-        data.insert(next(index), "mv_run_no", self.run_no)
-        data.insert(next(index), "mv_execution_time", self.get_execution_time())
-
-        # Add info about dimensions
-        dimensions = (
-            self.dimensions if overwrite_dimensions is None else overwrite_dimensions
+        return add_universe_info_to_df(
+            data=data,
+            universe_id=self.universe_id,
+            run_no=self.run_no,
+            dimensions=self.dimensions
+            if overwrite_dimensions is None
+            else overwrite_dimensions,
+            execution_time=self.get_execution_time(),
         )
-        dimensions_sorted = sorted(dimensions.keys())
-        for dimension in dimensions_sorted:
-            data.insert(next(index), f"mv_dim_{dimension}", dimensions[dimension])
-        return data
 
     def save_data(self, data: pd.DataFrame, add_info: bool = True) -> None:
         """

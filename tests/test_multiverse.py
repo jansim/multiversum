@@ -282,7 +282,7 @@ class TestUniverse:
             dimensions={"x": ["A", "B"], "y": ["A", "B"]},
             output_dir=output_dir,
         )
-        mv.save_error("test_universe", Exception("Test exception"))
+        mv.save_error("test_universe", {}, Exception("Test exception"))
         error_file = output_dir / "runs/1/errors/e_1-test_universe.csv"
         assert error_file.is_file()
         error_data = pd.read_csv(error_file)

@@ -15,6 +15,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed, cpu_count
 from .parallel import tqdm_joblib
 from .logger import logger
+from .helpers import add_universe_info_to_df
 
 import sys
 
@@ -376,7 +377,7 @@ class MultiverseAnalysis:
                 raise e
             else:
                 logger.exception(e)
-                self.save_error(universe_id, e)
+                self.save_error(universe_id, universe_dimensions, e)
 
     def _get_error_filepath(self, universe_id: str) -> Path:
         error_dir = self.get_run_dir(sub_directory=ERRORS_DIR_NAME)
@@ -384,7 +385,7 @@ class MultiverseAnalysis:
 
         return error_dir / error_filename
 
-    def save_error(self, universe_id: str, error: Exception) -> None:
+    def save_error(self, universe_id: str, dimensions: dict, error: Exception) -> None:
         """
         Save an error to a file.
 
@@ -399,12 +400,16 @@ class MultiverseAnalysis:
         if error_type == "PapermillExecutionError":
             error_type = error.ename
 
-        df_error = pd.DataFrame(
-            {
-                "mv_universe_id": [universe_id],
-                "mv_error_type": [error_type],
-                "mv_error": [str(error)],
-            }
+        df_error = add_universe_info_to_df(
+            pd.DataFrame(
+                {
+                    "mv_error_type": [error_type],
+                    "mv_error": [str(error)],
+                }
+            ),
+            universe_id=universe_id,
+            run_no=self.run_no,
+            dimensions=dimensions,
         )
         error_path = self._get_error_filepath(universe_id)
         df_error.to_csv(error_path, index=False)

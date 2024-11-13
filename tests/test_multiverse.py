@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+from pandas.testing import assert_series_equal
 
 import pytest
 from multiversum import generate_multiverse_grid, MultiverseAnalysis, Universe
@@ -135,6 +136,14 @@ class TestMultiverseAnalysis:
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 
+        # Check whether errors correctly show up in final data
+        aggregated_data = mv.aggregate_data(save=False)
+        assert aggregated_data.shape[0] == 4
+        assert_series_equal(
+            aggregated_data["mv_error_type"],
+            pd.Series([None, None, "ValueError", "ValueError"], name="mv_error_type"),
+        )
+
     def test_noteboook_timeout(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_timeout")
         mv = MultiverseAnalysis(
@@ -228,6 +237,29 @@ class TestUniverse:
             {"x": "B", "y": "A", "z": "C"},
             {"x": "B", "y": "B", "z": "C"},
         ]
+
+    def test_aggregate_data_no_files(self):
+        output_dir = get_temp_dir("test_aggregate_data_no_files")
+        mv = MultiverseAnalysis(
+            dimensions={"x": ["A", "B"], "y": ["A", "B"]},
+            output_dir=output_dir,
+        )
+        aggregated_data = mv.aggregate_data(save=False)
+        assert aggregated_data.empty
+
+    def test_manual_save_error(self):
+        output_dir = get_temp_dir("test_save_error")
+        mv = MultiverseAnalysis(
+            dimensions={"x": ["A", "B"], "y": ["A", "B"]},
+            output_dir=output_dir,
+        )
+        mv.save_error("test_universe", Exception("Test exception"))
+        error_file = output_dir / "runs/1/errors/e_1-test_universe.csv"
+        assert error_file.is_file()
+        error_data = pd.read_csv(error_file)
+        assert error_data["mv_universe_id"].iloc[0] == "test_universe"
+        assert error_data["mv_error_type"].iloc[0] == "Exception"
+        assert error_data["mv_error"].iloc[0] == "Test exception"
 
 
 class TestCLI:

@@ -24,6 +24,7 @@ else:
     import tomli as tomllib
 
 DEFAULT_SEED = 80539
+ERRORS_DIR_NAME = "errors"
 
 
 def generate_multiverse_grid(dimensions: Dict[str, List[str]]) -> List[Dict[str, Any]]:
@@ -203,11 +204,14 @@ class MultiverseAnalysis:
                 json.dump(self.grid, fp, indent=2)
         return self.grid
 
-    def aggregate_data(self, save: bool = True) -> pd.DataFrame:
+    def aggregate_data(
+        self, include_errors: bool = True, save: bool = True
+    ) -> pd.DataFrame:
         """
         Aggregate the data from all universes into a single DataFrame.
 
         Args:
+            include_errors: Whether to include error information.
             save: Whether to save the aggregated data to a file.
 
         Returns:
@@ -215,6 +219,10 @@ class MultiverseAnalysis:
         """
         data_dir = self.get_run_dir(sub_directory="data")
         csv_files = list(data_dir.glob("*.csv"))
+
+        if include_errors:
+            error_dir = self.get_run_dir(sub_directory=ERRORS_DIR_NAME)
+            csv_files += list(error_dir.glob("*.csv"))
 
         if len(csv_files) == 0:
             logger.warning("No data files to aggregate, returning empty dataframe.")
@@ -243,7 +251,7 @@ class MultiverseAnalysis:
         }
         all_universe_ids = set(multiverse_dict.keys())
 
-        aggregated_data = self.aggregate_data(save=False)
+        aggregated_data = self.aggregate_data(include_errors=False, save=False)
         universe_ids_with_data = set(aggregated_data["mv_universe_id"])
 
         missing_universe_ids = all_universe_ids - universe_ids_with_data
@@ -332,6 +340,11 @@ class MultiverseAnalysis:
         universe_id = self.generate_universe_id(universe_dimensions)
         logger.debug(f"Visiting universe: {universe_id}")
 
+        # Clean up any old error fiels
+        error_path = self._get_error_filepath(universe_id)
+        if error_path.is_file():
+            error_path.remove()
+
         # Generate final command
         output_dir = self.get_run_dir(sub_directory="notebooks")
         output_filename = "m_" + str(self.run_no) + "-" + universe_id + ".ipynb"
@@ -363,6 +376,38 @@ class MultiverseAnalysis:
                 raise e
             else:
                 logger.exception(e)
+                self.save_error(universe_id, e)
+
+    def _get_error_filepath(self, universe_id: str) -> Path:
+        error_dir = self.get_run_dir(sub_directory=ERRORS_DIR_NAME)
+        error_filename = "e_" + str(self.run_no) + "-" + universe_id + ".csv"
+
+        return error_dir / error_filename
+
+    def save_error(self, universe_id: str, error: Exception) -> None:
+        """
+        Save an error to a file.
+
+        Args:
+            universe_id: The ID of the universe that caused the error.
+            error: The exception that was raised.
+
+        Returns:
+            None
+        """
+        error_type = type(error).__name__
+        if error_type == "PapermillExecutionError":
+            error_type = error.ename
+
+        df_error = pd.DataFrame(
+            {
+                "mv_universe_id": [universe_id],
+                "mv_error_type": [error_type],
+                "mv_error": [str(error)],
+            }
+        )
+        error_path = self._get_error_filepath(universe_id)
+        df_error.to_csv(error_path, index=False)
 
     def execute_notebook_via_cli(
         self, input_path: str, output_path: str, parameters: Dict[str, str]

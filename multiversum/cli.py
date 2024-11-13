@@ -10,7 +10,7 @@ DEFAULT_CONFIG_FILE = "multiverse.toml"
 DEFAULT_PYTHON_SCRIPT_NAME = "multiverse.py"
 
 
-def run_cli(dimensions: Optional[dict] = None) -> None:
+def run_cli(dimensions: Optional[dict] = None, **kwargs) -> None:
     """Run a multiverse analysis from the command line.
 
     You will only need to use this function if you want to directly pass in
@@ -23,6 +23,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         dimensions (dict, optional): Manually specify dimensions. Set to None to
             use normal default / allow specification as an argument.
             Defaults to None.
+        **kwargs: Additional keyword arguments to pass to the MultiverseAnalysis
 
     Raises:
         FileNotFoundError: If the dimensions file is not found.
@@ -106,6 +107,7 @@ def run_cli(dimensions: Optional[dict] = None) -> None:
         output_dir=Path(args.output_dir),
         new_run=(args.mode != "continue"),
         seed=args.seed,
+        **kwargs,
     )
 
     multiverse_grid = multiverse_analysis.generate_grid(save=True)

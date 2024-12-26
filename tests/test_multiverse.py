@@ -10,6 +10,8 @@ import shutil
 
 import os
 
+from multiversum.helpers import add_universe_info_to_df
+
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"
 TEMP_DIR = TEST_DIR / "temp"
@@ -327,3 +329,39 @@ class TestCLI:
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 0
         assert count_files(output_dir, "counter.txt") == 0
         assert count_files(output_dir, "multiverse_grid.json") == 0
+
+
+class TestHelpers:
+    def test_add_universe_info_to_df_standard(self):
+        data = pd.DataFrame({"test_value": [42]})
+        data = add_universe_info_to_df(data, "test_universe", 0, {"hello": "world"})
+
+        pd.testing.assert_frame_equal(
+            data,
+            pd.DataFrame(
+                {
+                    "mv_universe_id": ["test_universe"],
+                    "mv_run_no": [0],
+                    "mv_execution_time": [None],
+                    "mv_dim_hello": ["world"],
+                    "test_value": [42],
+                }
+            ),
+        )
+
+    def test_add_universe_info_to_df_empty(self):
+        data = pd.DataFrame()
+        data = add_universe_info_to_df(data, "test_universe", 0, {"hello": "world"})
+
+        pd.testing.assert_frame_equal(
+            data,
+            pd.DataFrame(
+                {
+                    "mv_universe_id": ["test_universe"],
+                    "mv_run_no": [0],
+                    "mv_execution_time": [None],
+                    "mv_dim_hello": ["world"],
+                },
+                index=["test_universe"],
+            ),
+        )

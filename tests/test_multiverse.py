@@ -3,7 +3,12 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 
 import pytest
-from multiversum import generate_multiverse_grid, MultiverseAnalysis, Universe
+from multiversum import (
+    generate_multiverse_grid,
+    generate_universe_id,
+    MultiverseAnalysis,
+    Universe,
+)
 
 from pathlib import Path
 import shutil
@@ -200,13 +205,13 @@ class TestMultiverseAnalysis:
         )
 
     def test_generate_universe_id(self):
-        universe_id = MultiverseAnalysis.generate_universe_id({"x": "A", "y": "B"})
+        universe_id = generate_universe_id({"x": "A", "y": "B"})
         assert universe_id == "47899ae546a9854ebfe2de7396eff9fa"
 
     def test_generate_universe_id_order_invariance(self):
-        assert MultiverseAnalysis.generate_universe_id(
-            {"x": "A", "y": "B"}
-        ) == MultiverseAnalysis.generate_universe_id({"y": "B", "x": "A"})
+        assert generate_universe_id({"x": "A", "y": "B"}) == generate_universe_id(
+            {"y": "B", "x": "A"}
+        )
 
     def test_visit_universe(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_visit_universe")

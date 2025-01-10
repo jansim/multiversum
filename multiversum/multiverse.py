@@ -50,6 +50,38 @@ def generate_multiverse_grid(dimensions: Dict[str, List[str]]) -> List[Dict[str,
     return multiverse_grid
 
 
+def generate_universe_id(universe_parameters: Dict[str, Any]) -> str:
+    """
+    Generate a unique ID for a given universe.
+
+    Args:
+        universe_parameters: A dictionary containing the parameters for the universe.
+
+    Returns:
+        A unique ID for the universe.
+    """
+    # Note: Getting stable hashes seems to be easier said than done in Python
+    # See https://stackoverflow.com/questions/5884066/hashing-a-dictionary/22003440#22003440
+    return md5(
+        json.dumps(universe_parameters, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def add_ids_to_multiverse_grid(
+    multiverse_grid: List[Dict[str, Any]],
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Generates a dictionary of universe IDs mapped to their corresponding parameters.
+
+    Args:
+        multiverse_grid: A list of dictionaries, where each dictionary contains parameters for a universe.
+
+    Returns:
+        A dictionary where the keys are generated universe IDs and the values are the corresponding parameters.
+    """
+    return {generate_universe_id(u_params): u_params for u_params in multiverse_grid}
+
+
 class MissingUniverseInfo(TypedDict):
     missing_universe_ids: List[str]
     extra_universe_ids: List[str]
@@ -245,11 +277,7 @@ class MultiverseAnalysis:
                 universe ids (i.e. not in the current multiverse_grid)
                 and the dictionaries for the missing universes.
         """
-        multiverse_grid = self.generate_grid(save=False)
-        multiverse_dict = {
-            self.generate_universe_id(u_params): u_params
-            for u_params in multiverse_grid
-        }
+        multiverse_dict = add_ids_to_multiverse_grid(self.generate_grid(save=False))
         all_universe_ids = set(multiverse_dict.keys())
 
         aggregated_data = self.aggregate_data(include_errors=False, save=False)
@@ -270,23 +298,6 @@ class MultiverseAnalysis:
             "extra_universe_ids": extra_universe_ids,
             "missing_universes": missing_universes,
         }
-
-    @staticmethod
-    def generate_universe_id(universe_parameters: Dict[str, Any]) -> str:
-        """
-        Generate a unique ID for a given universe.
-
-        Args:
-            universe_parameters: A dictionary containing the parameters for the universe.
-
-        Returns:
-            A unique ID for the universe.
-        """
-        # Note: Getting stable hashes seems to be easier said than done in Python
-        # See https://stackoverflow.com/questions/5884066/hashing-a-dictionary/22003440#22003440
-        return md5(
-            json.dumps(universe_parameters, sort_keys=True).encode("utf-8")
-        ).hexdigest()
 
     def examine_multiverse(
         self, multiverse_grid: List[Dict[str, Any]] = None, n_jobs: int = -2
@@ -338,7 +349,7 @@ class MultiverseAnalysis:
             None
         """
         # Generate universe ID
-        universe_id = self.generate_universe_id(universe_dimensions)
+        universe_id = generate_universe_id(universe_dimensions)
         logger.debug(f"Visiting universe: {universe_id}")
 
         # Clean up any old error fiels

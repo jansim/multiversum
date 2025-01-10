@@ -3,7 +3,7 @@ from pathlib import Path
 import runpy
 from typing import Optional
 
-from .multiverse import DEFAULT_SEED, MultiverseAnalysis
+from .multiverse import DEFAULT_SEED, MultiverseAnalysis, add_ids_to_multiverse_grid
 from .logger import logger
 
 DEFAULT_CONFIG_FILE = "multiverse.toml"
@@ -79,6 +79,16 @@ def run_cli(dimensions: Optional[dict] = None, **kwargs) -> None:
         default=str(DEFAULT_SEED),
         type=int,
     )
+
+    parser.add_argument(
+        "--u-id",
+        help=(
+            "Examine only a single universe with the given universe id (or starting with the provided id)."
+        ),
+        default=None,
+        type=str,
+    )
+
     args = parser.parse_args()
     logger.debug(f"Parsed arguments: {args}")
 
@@ -112,6 +122,18 @@ def run_cli(dimensions: Optional[dict] = None, **kwargs) -> None:
 
     multiverse_grid = multiverse_analysis.generate_grid(save=True)
     logger.info(f"Generated N = {len(multiverse_grid)} universes")
+
+    if args.u_id is not None:
+        # Search for this particular universe
+        multiverse_dict = add_ids_to_multiverse_grid(multiverse_grid)
+        matching_values = [
+            key for key in multiverse_dict.keys() if key.startswith(args.u_id)
+        ]
+        assert len(matching_values) == 1, (
+            f"The id {args.u_id} matches {len(matching_values)} universe ids."
+        )
+        logger.info(f"Running only universe: {matching_values[0]}")
+        multiverse_grid = [multiverse_dict[matching_values[0]]]
 
     logger.info(
         f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed}) ~"

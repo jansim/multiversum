@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_series_equal
 
@@ -43,6 +44,10 @@ class TestGenerateMultiverseGrid:
             {"x": 2, "y": 3},
             {"x": 2, "y": 4},
         ]
+
+    def test_grid_duplicates_error(self):
+        with pytest.raises(ValueError):
+            generate_multiverse_grid({"x": [1, 2], "y": [3, 3, 4]})
 
     def test_edge_cases(self):
         # Test with empty dimensions
@@ -139,7 +144,8 @@ class TestMultiverseAnalysis:
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
-        missing_info = mv.check_missing_universes()
+        with pytest.warns(UserWarning):
+            missing_info = mv.check_missing_universes()
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 
@@ -148,7 +154,9 @@ class TestMultiverseAnalysis:
         assert aggregated_data.shape[0] == 4
         assert_series_equal(
             aggregated_data["mv_error_type"],
-            pd.Series([None, None, "ValueError", "ValueError"], name="mv_error_type"),
+            pd.Series(
+                [np.nan, np.nan, "ValueError", "ValueError"], name="mv_error_type"
+            ),
         )
 
     def test_noteboook_timeout(self):
@@ -171,7 +179,8 @@ class TestMultiverseAnalysis:
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
-        missing_info = mv.check_missing_universes()
+        with pytest.warns(UserWarning):
+            missing_info = mv.check_missing_universes()
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 

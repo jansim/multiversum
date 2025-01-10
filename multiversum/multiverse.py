@@ -44,6 +44,8 @@ def generate_multiverse_grid(dimensions: Dict[str, List[str]]) -> List[Dict[str,
     keys, values = zip(*dimensions.items())
     assert all(isinstance(k, str) for k in keys)
     assert all(isinstance(v, list) for v in values)
+    if any(len(dim) != len(set(dim)) for dim in values):
+        raise ValueError("Dimensions must not contain duplicate values.")
 
     # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     multiverse_grid = [dict(zip(keys, v)) for v in itertools.product(*values)]

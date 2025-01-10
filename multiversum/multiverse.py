@@ -344,7 +344,8 @@ class MultiverseAnalysis:
         # Clean up any old error fiels
         error_path = self._get_error_filepath(universe_id)
         if error_path.is_file():
-            error_path.remove()
+            warnings.warn(f"Removing old error file: {error_path}. This should only happen during a re-run.")
+            error_path.unlink()
 
         # Generate final command
         output_dir = self.get_run_dir(sub_directory="notebooks")

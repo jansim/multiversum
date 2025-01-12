@@ -364,7 +364,8 @@ class MultiverseAnalysis:
 
         # Generate final command
         output_dir = self.get_run_dir(sub_directory="notebooks")
-        output_filename = "m_" + str(self.run_no) + "-" + universe_id + ".ipynb"
+        output_filename = f"nb_{self.run_no}-{universe_id}.ipynb"
+        output_path = output_dir / output_filename
 
         # Ensure output dir exists
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -382,13 +383,16 @@ class MultiverseAnalysis:
         try:
             self.execute_notebook_via_api(
                 input_path=str(self.notebook),
-                output_path=str(output_dir / output_filename),
+                output_path=str(output_path),
                 parameters={
                     "settings": settings_str,
                 },
             )
         except Exception as e:
             logger.error(f"Error in universe {universe_id} ({output_filename})")
+            # Rename notebook file to indicate error
+            error_output_path = output_dir / ("E_" + output_filename)
+            output_path.rename(error_output_path)
             if self.stop_on_error:
                 raise e
             else:

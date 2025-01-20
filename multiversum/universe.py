@@ -46,7 +46,8 @@ def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFram
         The dataframe with the added columns.
     """
     if not all(
-        (len(value) == len(df) or len(value) == 1) for value in dictionary.values()
+        (not hasattr(value, "__len__") or len(value) == len(df) or len(value) == 1)
+        for value in dictionary.values()
     ):
         raise ValueError(
             "Dictionary values must have the same length as the dataframe or length 1."

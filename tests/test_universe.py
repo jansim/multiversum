@@ -10,6 +10,13 @@ class TestHelpers:
         result_df = add_dict_to_df(df, dictionary)
         assert result_df.equals(df)
 
+    def test_add_dict_to_df_empty_df_and_scalars(self):
+        df = pd.DataFrame()
+        dictionary = {"A": 1, "B": 2, "C": 3}
+        result_df = add_dict_to_df(df, dictionary)
+        expected_df = pd.DataFrame({"A": [1], "B": [2], "C": [3]})
+        assert result_df.equals(expected_df)
+
     def test_add_dict_to_df_non_empty_df_and_dict(self):
         df = pd.DataFrame({"A": [1, 2, 3]})
         dictionary = {"B": [4, 5, 6], "C": [7, 8, 9]}

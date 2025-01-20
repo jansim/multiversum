@@ -40,6 +40,7 @@ def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFram
     Args:
         df: The dataframe to which the columns should be added.
         dictionary: The dictionary containing the values to be added.
+            The dictionary's values should be lists or will be wrapped into lists.
         prefix: A prefix to be added to the column names. (optional)
 
     Returns:
@@ -52,7 +53,10 @@ def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFram
         raise ValueError(
             "Dictionary values must have the same length as the dataframe or length 1."
         )
-    new_columns = {prefix + key: value for key, value in dictionary.items()}
+    new_columns = {
+        prefix + key: (value if isinstance(value, list) else [value])
+        for key, value in dictionary.items()
+    }
     return pd.concat([df, pd.DataFrame(new_columns)], axis=1)
 
 

@@ -24,6 +24,15 @@ class TestHelpers:
         expected_df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
         assert result_df.equals(expected_df)
 
+    def test_add_dict_to_df_with_index(self):
+        df = pd.DataFrame({"A": [1]}, index=["gibberish"])
+        dictionary = {"B": [2], "C": 3.0}
+        result_df = add_dict_to_df(df, dictionary)
+        expected_df = pd.DataFrame(
+            {"A": [1], "B": [2], "C": [3.0]}, index=["gibberish"]
+        )
+        assert result_df.equals(expected_df)
+
     def test_add_dict_to_df_with_prefix(self):
         df = pd.DataFrame({"A": [1, 2, 3]})
         dictionary = {"B": [4, 5, 6]}

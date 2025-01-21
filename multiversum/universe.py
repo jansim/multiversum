@@ -46,18 +46,21 @@ def add_dict_to_df(df: pd.DataFrame, dictionary: dict, prefix="") -> pd.DataFram
     Returns:
         The dataframe with the added columns.
     """
-    if not all(
-        (not hasattr(value, "__len__") or len(value) == len(df) or len(value) == 1)
-        for value in dictionary.values()
-    ):
+    df_new_cols = pd.DataFrame(
+        {
+            prefix + key: (value if isinstance(value, list) else [value])
+            for key, value in dictionary.items()
+        }
+    )
+    # Verify length of dictionary values
+    if not (len(df_new_cols) == len(df) or len(df_new_cols) == 1):
         raise ValueError(
             "Dictionary values must have the same length as the dataframe or length 1."
         )
-    new_columns = {
-        prefix + key: (value if isinstance(value, list) else [value])
-        for key, value in dictionary.items()
-    }
-    return pd.concat([df, pd.DataFrame(new_columns)], axis=1)
+    # Match indices
+    if not df.empty:
+        df_new_cols.index = df.index
+    return pd.concat([df, df_new_cols], axis=1)
 
 
 def flatten_dict(d: dict, parent_key="", sep="_") -> dict:

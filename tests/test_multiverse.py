@@ -49,6 +49,12 @@ class TestGenerateMultiverseGrid:
         with pytest.raises(ValueError):
             generate_multiverse_grid({"x": [1, 2], "y": [3, 3, 4]})
 
+    def test_grid_sub_universes(self):
+        assert generate_multiverse_grid({"x": [1, 2], "y": [[3, 4]]}) == [
+            {"x": 1, "y": (3, 4)},
+            {"x": 2, "y": (3, 4)},
+        ]
+
     def test_edge_cases(self):
         # Test with empty dimensions
         with pytest.raises(ValueError):

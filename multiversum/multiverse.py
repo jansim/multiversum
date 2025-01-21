@@ -4,6 +4,7 @@ This module contains helper functions to orchestrate a multiverse analysis.
 
 import itertools
 from pathlib import Path
+import runpy
 from typing import Any, Dict, List, Optional, TypedDict
 from hashlib import md5
 import subprocess
@@ -135,9 +136,11 @@ class MultiverseAnalysis:
         Args:
             dimensions: A dictionary containing the dimensions of the multiverse.
                 Each dimension corresponds to a decision.
-                Alternatively a Path to a JSON file containing the dimensions.
             notebook: The Path to the notebook to run.
-            config_file: A Path to a JSON file containing the dimensions.
+            config_file: A Path to a TOML, JSON or Python file containing the
+                analysis configuration. Supported confugration options are:
+                dimensions, stop_on_error. If a Python file is used, it should
+                contain a dictionary named config.
             output_dir: The directory to store the output in.
             run_no: The number of the current run. Defaults to an automatically
                 incrementing integer number if new_run is True or the last run if
@@ -154,8 +157,13 @@ class MultiverseAnalysis:
             elif config_file.suffix == ".json":
                 with open(config_file, "r") as fp:
                     config = json.load(fp)
+            elif config_file.suffix == ".py":
+                results = runpy.run_path(str(config_file))
+                config = results["config"]
             else:
-                raise ValueError("Only .toml and .json files are supported as config.")
+                raise ValueError(
+                    "Only .toml, .json and .py files are supported as config."
+                )
 
             if "dimensions" in config:
                 assert dimensions is None

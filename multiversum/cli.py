@@ -4,7 +4,7 @@ from pathlib import Path
 from .multiverse import DEFAULT_SEED, MultiverseAnalysis, add_ids_to_multiverse_grid
 from .logger import logger
 
-DEFAULT_CONFIG_FILE = "multiverse.toml"
+DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
 
 
 @click.command()
@@ -18,7 +18,7 @@ DEFAULT_CONFIG_FILE = "multiverse.toml"
     "--config",
     type=click.Path(exists=True),
     default=None,
-    help=f"Relative path to a TOML or JSON file with a config for the multiverse. Defaults to {DEFAULT_CONFIG_FILE}.",
+    help=f"Relative path to a TOML, JSON or Python file with a config for the multiverse. Defaults to searching for {', '.join(DEFAULT_CONFIG_FILES)} (in that order).",
 )
 @click.option(
     "--notebook",
@@ -50,17 +50,18 @@ def cli(
     output_dir,
     seed,
     u_id,
-    **kwargs,
 ):
     """Run a multiverse analysis from the command line."""
     logger.debug(f"Parsed arguments: {ctx.params}")
 
     if config is not None:
         config_file = Path(config)
-    elif Path(DEFAULT_CONFIG_FILE).is_file():
-        config_file = Path(DEFAULT_CONFIG_FILE)
     else:
         config_file = None
+        for file in DEFAULT_CONFIG_FILES:
+            if Path(file).is_file():
+                config_file = Path(file)
+                break
 
     multiverse_analysis = MultiverseAnalysis(
         config_file=config_file,
@@ -68,7 +69,6 @@ def cli(
         output_dir=Path(output_dir),
         new_run=(mode != "continue"),
         seed=seed,
-        **kwargs,
     )
 
     multiverse_grid = multiverse_analysis.generate_grid(save=True)

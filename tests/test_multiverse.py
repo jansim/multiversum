@@ -89,6 +89,15 @@ class TestMultiverseAnalysis:
             "y": ["B", "C"],
         }
 
+    def test_config_py(self):
+        mv = MultiverseAnalysis(
+            config_file=TEST_DIR / "notebooks" / "simple_c.py", run_no=0
+        )
+        assert mv.dimensions == {
+            "x": ["C", "D"],
+            "y": ["C", "D"],
+        }
+
     def test_noteboook_simple(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
         mv = MultiverseAnalysis(

@@ -156,9 +156,9 @@ class TestMultiverseAnalysis:
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 2
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
-        assert count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2, (
-            "Notebooks with errors are highlighted"
-        )
+        assert (
+            count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2
+        ), "Notebooks with errors are highlighted"
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
@@ -221,9 +221,9 @@ class TestMultiverseAnalysis:
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 0
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 2
-        assert count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2, (
-            "Notebooks with errors are highlighted"
-        )
+        assert (
+            count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2
+        ), "Notebooks with errors are highlighted"
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether errors correctly show up in final data

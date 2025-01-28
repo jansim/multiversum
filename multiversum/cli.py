@@ -33,7 +33,10 @@ DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
     help="Relative path to output directory for the results.",
 )
 @click.option(
-    "--seed", type=int, default=DEFAULT_SEED, help="The seed to use for the analysis."
+    "--seed",
+    type=int,
+    default=None,
+    help=f"The seed to use for the analysis (Defaults to {DEFAULT_SEED}).",
 )
 @click.option(
     "--u-id",
@@ -80,9 +83,9 @@ def cli(
         matching_values = [
             key for key in multiverse_dict.keys() if key.startswith(u_id)
         ]
-        assert len(matching_values) == 1, (
-            f"The id {u_id} matches {len(matching_values)} universe ids."
-        )
+        assert (
+            len(matching_values) == 1
+        ), f"The id {u_id} matches {len(matching_values)} universe ids."
         logger.info(f"Running only universe: {matching_values[0]}")
         multiverse_grid = [multiverse_dict[matching_values[0]]]
 

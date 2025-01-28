@@ -119,7 +119,7 @@ class MultiverseAnalysis:
     output_dir = None
     run_no = None
     new_run = None
-    seed = None
+    seed = DEFAULT_SEED
     grid = None
     cell_timeout = None
     stop_on_error = True
@@ -132,7 +132,7 @@ class MultiverseAnalysis:
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
-        seed: Optional[int] = DEFAULT_SEED,
+        seed: Optional[int] = None,
         stop_on_error: bool = True,
         cell_timeout: Optional[int] = None,
     ) -> None:
@@ -175,6 +175,14 @@ class MultiverseAnalysis:
                 assert dimensions is None
                 self.dimensions = config["dimensions"]
 
+            if "seed" in config:
+                if seed is None:
+                    self.seed = config["seed"]
+                else:
+                    warnings.warn(
+                        "Seed was specified in both the config file and as an argument. Using the argument value."
+                    )
+
             if "stop_on_error" in config:
                 self.stop_on_error = config["stop_on_error"]
 
@@ -185,7 +193,8 @@ class MultiverseAnalysis:
         self.output_dir = output_dir
         if self.output_dir is not None:
             self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.seed = seed
+        if seed is not None:
+            self.seed = seed
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )

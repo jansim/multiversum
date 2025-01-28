@@ -519,39 +519,6 @@ class MultiverseAnalysis:
         error_path = self._get_error_filepath(universe_id)
         df_error.to_csv(error_path, index=False)
 
-    def execute_notebook_via_cli(
-        self, input_path: str, output_path: str, parameters: Dict[str, str]
-    ):
-        """
-        Executes a notebook via the papermill command line interface.
-
-        Args:
-            input_path: The path to the input notebook.
-            output_path: The path to the output notebook.
-            parameters: A dictionary containing the parameters for the notebook.
-
-        Returns:
-            None
-        """
-        call_params = [
-            "papermill",
-            input_path,
-            output_path,
-        ]
-        if self.cell_timeout is not None:
-            call_params.append("--execution-timeout")
-            call_params.append(str(self.cell_timeout))
-
-        for key, value in parameters.items():
-            call_params.append("-p")
-            call_params.append(key)
-            call_params.append(value)
-
-        logger.info(" ".join(call_params))
-        # Call papermill render
-        process = subprocess.run(call_params, capture_output=True, text=True)
-        logger.info(process.stdout)
-        logger.info(process.stderr)
 
     def execute_notebook_via_api(
         self, input_path: str, output_path: str, parameters: Dict[str, str]

@@ -31,18 +31,6 @@ The package always works with two different files: The `multiverse.toml` ✨️,
 
 An example using a machine learning workflow in scikit-learn can be found [here](./examples/scikit-learn--simple/).
 
-### Constraints
-
-You can define constraints in the `multiverse.toml` file to filter out nonsensical dimension combinations. Here is an example:
-
-```toml
-[constraints]
-scaler = [
-  { value = "no-scaler", allowed_if = { "feature_selector": "use-all-features" } },
-  { value = "MinMaxScaler", forbidden_if = { "feature_selector": "use-all-features" } }
-]
-```
-
 ## Getting Started
 
 To quickly get started with running your own multiverse analysis, you can use the [multiversum starter template](https://github.com/jansim/multiversum-template).

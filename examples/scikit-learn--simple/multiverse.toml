@@ -14,9 +14,3 @@ model = [
   "DecisionTree",
   "RandomForest"
 ]
-
-[constraints]
-scaler = [
-  { value = "no-scaler", allowed_if = { "feature_selector": "use-all-features" } },
-  { value = "MinMaxScaler", forbidden_if = { "feature_selector": "use-all-features" } }
-]

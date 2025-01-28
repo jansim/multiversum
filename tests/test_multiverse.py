@@ -77,19 +77,19 @@ class TestGenerateMultiverseGrid:
 
     def test_apply_constraints(self):
         dimensions = {
-            "scaler": ["StandardScaler", "MinMaxScaler", "no-scaler"],
-            "feature_selector": ["SelectKBest_5", "SelectKBest_10", "use-all-features"],
+            "fizz": ["A", "B", "C"],
+            "buzz": ["always-allowed", "only-allowed-with-B", "allowed-except-for-C"],
         }
 
         constraints = {
-            "scaler": [
+            "buzz": [
                 {
-                    "value": "no-scaler",
-                    "allowed_if": {"feature_selector": "use-all-features"},
+                    "value": "only-allowed-with-B",
+                    "allowed_if": {"fizz": "B"},
                 },
                 {
-                    "value": "MinMaxScaler",
-                    "forbidden_if": {"feature_selector": "use-all-features"},
+                    "value": "allowed-except-for-C",
+                    "forbidden_if": {"fizz": "C"},
                 },
             ]
         }
@@ -97,12 +97,12 @@ class TestGenerateMultiverseGrid:
         filtered_grid = generate_multiverse_grid(dimensions, constraints)
 
         expected_grid = [
-            {"scaler": "StandardScaler", "feature_selector": "SelectKBest_5"},
-            {"scaler": "StandardScaler", "feature_selector": "SelectKBest_10"},
-            {"scaler": "StandardScaler", "feature_selector": "use-all-features"},
-            {"scaler": "MinMaxScaler", "feature_selector": "SelectKBest_5"},
-            {"scaler": "MinMaxScaler", "feature_selector": "SelectKBest_10"},
-            {"scaler": "no-scaler", "feature_selector": "use-all-features"},
+            {"fizz": "A", "buzz": "always-allowed"},
+            {"fizz": "A", "buzz": "allowed-except-for-C"},
+            {"fizz": "B", "buzz": "always-allowed"},
+            {"fizz": "B", "buzz": "only-allowed-with-B"},
+            {"fizz": "B", "buzz": "allowed-except-for-C"},
+            {"fizz": "C", "buzz": "always-allowed"},
         ]
 
         assert filtered_grid == expected_grid

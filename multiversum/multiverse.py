@@ -76,6 +76,12 @@ def apply_constraints(
     Args:
         multiverse_grid: A list of dictionaries containing the settings for different universes.
         constraints: A dictionary containing constraints for dimensions.
+            Keys in the dict correspond to dimensions, values are lists of constraints.
+            Each constraint is a dictionary of the following structure:
+                - value: The value of the dimension that the constraint applies to.
+                - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+                - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+            Only one of allowed_if and forbidden_if can be present in a constraint.
 
     Returns:
         A filtered list of dictionaries containing the settings for different universes.
@@ -165,6 +171,7 @@ class MultiverseAnalysis:
     """
 
     dimensions = None
+    constraints = None
     notebook = None
     config_file = None
     output_dir = None

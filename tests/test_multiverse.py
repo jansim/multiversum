@@ -17,7 +17,6 @@ import shutil
 import os
 
 from multiversum.helpers import add_universe_info_to_df
-from multiversum.multiverse import apply_constraints
 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"
@@ -95,8 +94,7 @@ class TestGenerateMultiverseGrid:
             ]
         }
 
-        multiverse_grid = generate_multiverse_grid(dimensions)
-        filtered_grid = apply_constraints(multiverse_grid, constraints)
+        filtered_grid = generate_multiverse_grid(dimensions, constraints)
 
         expected_grid = [
             {"scaler": "StandardScaler", "feature_selector": "SelectKBest_5"},

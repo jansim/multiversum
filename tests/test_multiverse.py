@@ -17,6 +17,7 @@ import shutil
 import os
 
 from multiversum.helpers import add_universe_info_to_df
+from multiversum.multiverse import apply_constraints
 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"

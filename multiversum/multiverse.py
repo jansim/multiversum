@@ -29,7 +29,10 @@ DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
 
 
-def generate_multiverse_grid(dimensions: Dict[str, List[str]], constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None) -> List[Dict[str, Any]]:
+def generate_multiverse_grid(
+    dimensions: Dict[str, List[str]],
+    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+) -> List[Dict[str, Any]]:
     """
     Generate a full grid from a dictionary of dimensions.
 
@@ -64,7 +67,9 @@ def generate_multiverse_grid(dimensions: Dict[str, List[str]], constraints: Opti
     return multiverse_grid
 
 
-def apply_constraints(multiverse_grid: List[Dict[str, Any]], constraints: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+def apply_constraints(
+    multiverse_grid: List[Dict[str, Any]], constraints: Dict[str, List[Dict[str, Any]]]
+) -> List[Dict[str, Any]]:
     """
     Apply constraints to filter out nonsensical dimension combinations.
 
@@ -75,6 +80,7 @@ def apply_constraints(multiverse_grid: List[Dict[str, Any]], constraints: Dict[s
     Returns:
         A filtered list of dictionaries containing the settings for different universes.
     """
+
     def is_allowed(universe: Dict[str, Any], constraint: Dict[str, Any]) -> bool:
         if "allowed_if" in constraint:
             for key, value in constraint["allowed_if"].items():
@@ -91,7 +97,9 @@ def apply_constraints(multiverse_grid: List[Dict[str, Any]], constraints: Dict[s
         valid = True
         for dimension, dimension_constraints in constraints.items():
             for constraint in dimension_constraints:
-                if universe[dimension] == constraint["value"] and not is_allowed(universe, constraint):
+                if universe[dimension] == constraint["value"] and not is_allowed(
+                    universe, constraint
+                ):
                     valid = False
                     break
             if not valid:

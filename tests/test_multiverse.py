@@ -79,13 +79,19 @@ class TestGenerateMultiverseGrid:
     def test_apply_constraints(self):
         dimensions = {
             "scaler": ["StandardScaler", "MinMaxScaler", "no-scaler"],
-            "feature_selector": ["SelectKBest_5", "SelectKBest_10", "use-all-features"]
+            "feature_selector": ["SelectKBest_5", "SelectKBest_10", "use-all-features"],
         }
 
         constraints = {
             "scaler": [
-                {"value": "no-scaler", "allowed_if": {"feature_selector": "use-all-features"}},
-                {"value": "MinMaxScaler", "forbidden_if": {"feature_selector": "use-all-features"}}
+                {
+                    "value": "no-scaler",
+                    "allowed_if": {"feature_selector": "use-all-features"},
+                },
+                {
+                    "value": "MinMaxScaler",
+                    "forbidden_if": {"feature_selector": "use-all-features"},
+                },
             ]
         }
 
@@ -98,7 +104,7 @@ class TestGenerateMultiverseGrid:
             {"scaler": "StandardScaler", "feature_selector": "use-all-features"},
             {"scaler": "MinMaxScaler", "feature_selector": "SelectKBest_5"},
             {"scaler": "MinMaxScaler", "feature_selector": "SelectKBest_10"},
-            {"scaler": "no-scaler", "feature_selector": "use-all-features"}
+            {"scaler": "no-scaler", "feature_selector": "use-all-features"},
         ]
 
         assert filtered_grid == expected_grid

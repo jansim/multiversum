@@ -75,6 +75,38 @@ class TestGenerateMultiverseGrid:
             {"x": 1, "y": 2, "z": 3}
         ]
 
+    def test_apply_constraints(self):
+        dimensions = {
+            "fizz": ["A", "B", "C"],
+            "buzz": ["always-allowed", "only-allowed-with-B", "allowed-except-for-C"],
+        }
+
+        constraints = {
+            "buzz": [
+                {
+                    "value": "only-allowed-with-B",
+                    "allowed_if": {"fizz": "B"},
+                },
+                {
+                    "value": "allowed-except-for-C",
+                    "forbidden_if": {"fizz": "C"},
+                },
+            ]
+        }
+
+        filtered_grid = generate_multiverse_grid(dimensions, constraints)
+
+        expected_grid = [
+            {"fizz": "A", "buzz": "always-allowed"},
+            {"fizz": "A", "buzz": "allowed-except-for-C"},
+            {"fizz": "B", "buzz": "always-allowed"},
+            {"fizz": "B", "buzz": "only-allowed-with-B"},
+            {"fizz": "B", "buzz": "allowed-except-for-C"},
+            {"fizz": "C", "buzz": "always-allowed"},
+        ]
+
+        assert filtered_grid == expected_grid
+
 
 class TestMultiverseAnalysis:
     def test_config_json(self):

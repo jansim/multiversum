@@ -172,7 +172,7 @@ class MultiverseAnalysis:
 
     dimensions = None
     constraints = None
-    notebook = None
+    universe_file = None
     config_file = None
     output_dir = None
     run_no = None
@@ -185,7 +185,7 @@ class MultiverseAnalysis:
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
-        notebook: Path = Path("./universe.ipynb"),
+        universe_file: Path = Path("./universe.ipynb"),
         config_file: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
@@ -200,7 +200,8 @@ class MultiverseAnalysis:
         Args:
             dimensions: A dictionary containing the dimensions of the multiverse.
                 Each dimension corresponds to a decision.
-            notebook: The Path to the notebook to run.
+            universe_file: The Path to the universe_file to run. Either an
+                ipython / jupyter notebook (.ipynb) or a python script (.py).
             config_file: A Path to a TOML, JSON or Python file containing the
                 analysis configuration. Supported confugration options are:
                 dimensions, stop_on_error. If a Python file is used, it should
@@ -250,7 +251,7 @@ class MultiverseAnalysis:
         if dimensions is not None:
             self.dimensions = dimensions
 
-        self.notebook = notebook
+        self.universe_file = universe_file
         self.output_dir = output_dir
         if self.output_dir is not None:
             self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -466,7 +467,7 @@ class MultiverseAnalysis:
 
         try:
             self.execute_notebook_via_api(
-                input_path=str(self.notebook),
+                input_path=str(self.universe_file),
                 output_path=str(output_path),
                 parameters={
                     "settings": settings_str,

@@ -143,7 +143,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "simple.ipynb",
             output_dir=output_dir,
         )
         mv.examine_multiverse()
@@ -170,7 +170,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "error.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "error.ipynb",
             output_dir=output_dir,
         )
         mv.stop_on_error = False
@@ -216,7 +216,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            notebook=TEST_DIR / "notebooks" / "slow.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "slow.ipynb",
             output_dir=output_dir,
         )
         mv.cell_timeout = 1
@@ -243,7 +243,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            notebook=TEST_DIR / "notebooks" / "slow.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "slow.ipynb",
             output_dir=output_dir,
             cell_timeout=1,
             stop_on_error=False,
@@ -282,7 +282,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "simple.ipynb",
             output_dir=output_dir,
         )
         mv.visit_universe({"x": "A", "y": "B"})
@@ -368,7 +368,7 @@ class TestCLI:
 
         # Run a test multiverse analysis via the CLI
         os.system(
-            f"python -m multiversum --notebook {notebook} --config {config} --output-dir {output_dir}"
+            f"python -m multiversum --universe {notebook} --config {config} --output-dir {output_dir}"
         )
 
         # Check whether all expected files are there

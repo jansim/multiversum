@@ -451,7 +451,7 @@ class MultiverseAnalysis:
         universe_filetype = self.universe_file.suffix
 
         # Generate final command
-        output_dir = self.get_run_dir(sub_directory="notebooks")
+        output_dir = self.get_run_dir(sub_directory="universes")
         output_filename = f"nb_{self.run_no}-{universe_id}{universe_filetype}"
         output_path = output_dir / output_filename
 

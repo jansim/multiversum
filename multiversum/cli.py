@@ -24,7 +24,7 @@ DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
 @click.option(
     "--universe",
     type=click.Path(),
-    default="./universe.ipynb",
+    default=None,
     help=f"Relative path to the universe file to run. Defaults to searching for {', '.join(DEFAULT_UNIVERSE_FILES)} (in that order).",
 )
 @click.option(

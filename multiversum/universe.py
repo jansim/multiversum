@@ -9,10 +9,26 @@ import pandas as pd
 import json
 import numpy as np
 import warnings
+import inspect
 from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 
 from .helpers import add_universe_info_to_df
-from .multiverse import generate_multiverse_grid
+from .multiverse import generate_multiverse_grid, SCRIPT_GLOBAL_OVERWRITE_NAME
+
+
+def search_in_parent_frames(key):
+    """Recursively searches through parent frames for a key in the globals and returns the corresponding value if found."""
+    # Start from the caller's frame
+    frame = inspect.currentframe().f_back
+
+    while frame:
+        # Check if the key is in the global scope
+        if key in frame.f_globals:
+            return frame.f_globals[key]
+        # Move to the next frame up
+        frame = frame.f_back
+
+    return None
 
 
 def predict_w_threshold(probabilities: np.array, threshold: float) -> np.array:
@@ -161,10 +177,21 @@ class Universe:
         """
         self.ts_start = time.time()
 
+        # Check whether global overrides are present
+        global_overwrite_settings = search_in_parent_frames(
+            SCRIPT_GLOBAL_OVERWRITE_NAME
+        )
+        if global_overwrite_settings is not None:
+            print(
+                f"Detected {SCRIPT_GLOBAL_OVERWRITE_NAME}, the settings argument will be ignored."
+            )
+            settings = global_overwrite_settings
+
         # Extract settings
         parsed_settings = (
             json.loads(settings) if isinstance(settings, str) else settings
         )
+
         self.run_no = parsed_settings["run_no"] if "run_no" in parsed_settings else 0
         self.universe_id = (
             parsed_settings["universe_id"]

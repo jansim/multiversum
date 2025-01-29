@@ -143,14 +143,41 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "simple_universe.ipynb",
             output_dir=output_dir,
         )
-        mv.examine_multiverse()
+        mv.examine_multiverse(n_jobs=1)
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 4
         assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "counter.txt") == 1
+
+        # Check whether data aggregation works
+        aggregated_data = mv.aggregate_data(save=False)
+        assert not aggregated_data.empty
+        assert "value" in aggregated_data.columns
+
+        # Check whether missing universes remain
+        missing_info = mv.check_missing_universes()
+        assert len(missing_info["missing_universe_ids"]) == 0
+        assert len(missing_info["extra_universe_ids"]) == 0
+
+    def test_noteboook_simple_py(self):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple_py")
+        mv = MultiverseAnalysis(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            universe_file=TEST_DIR / "notebooks" / "simple_universe.py",
+            output_dir=output_dir,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/notebooks/*.py") == 4
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether data aggregation works
@@ -282,7 +309,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "notebooks" / "simple_universe.ipynb",
             output_dir=output_dir,
         )
         mv.visit_universe({"x": "A", "y": "B"})
@@ -363,7 +390,7 @@ class TestUniverse:
 class TestCLI:
     def test_simple(self):
         output_dir = get_temp_dir("test_CLI_simple")
-        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
+        notebook = TEST_DIR / "notebooks" / "simple_universe.ipynb"
         config = TEST_DIR / "notebooks" / "simple_a.json"
 
         # Run a test multiverse analysis via the CLI
@@ -380,7 +407,7 @@ class TestCLI:
 
     def test_multiverse_py_empty(self):
         output_dir = get_temp_dir("test_multiverse_py_empty")
-        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
+        notebook = TEST_DIR / "notebooks" / "simple_universe.ipynb"
 
         # Run a test multiverse analysis via the CLI
         wd = os.getcwd()

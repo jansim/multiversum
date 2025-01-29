@@ -555,7 +555,7 @@ class MultiverseAnalysis:
         )
 
     def execute_python_script(
-        self, input_path: str, output_path: str | None, parameters: Dict[str, Any]
+        self, input_path: str, output_path: Optional[str], parameters: Dict[str, Any]
     ):
         global_dict = {SCRIPT_GLOBAL_OVERWRITE_NAME: parameters}
 

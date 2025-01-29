@@ -7,12 +7,13 @@ from pathlib import Path
 import runpy
 from typing import Any, Dict, List, Optional, TypedDict
 from hashlib import md5
-import subprocess
 import json
 import warnings
 import pandas as pd
 import papermill as pm
 from tqdm import tqdm
+import contextlib
+import io
 from joblib import Parallel, delayed, cpu_count
 from .parallel import tqdm_joblib
 from .logger import logger
@@ -27,6 +28,7 @@ else:
 
 DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
+SCRIPT_GLOBAL_OVERWRITE_NAME = "MULTIVERSUM_OVERRIDE_SETTINGS"
 
 
 def generate_multiverse_grid(
@@ -172,7 +174,6 @@ class MultiverseAnalysis:
 
     dimensions = None
     constraints = None
-    notebook = None
     config_file = None
     output_dir = None
     run_no = None
@@ -185,7 +186,7 @@ class MultiverseAnalysis:
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
-        notebook: Path = Path("./universe.ipynb"),
+        universe_file: Path = Path("./universe.ipynb"),
         config_file: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
@@ -200,7 +201,8 @@ class MultiverseAnalysis:
         Args:
             dimensions: A dictionary containing the dimensions of the multiverse.
                 Each dimension corresponds to a decision.
-            notebook: The Path to the notebook to run.
+            universe_file: The Path to the universe_file to run. Either an
+                ipython / jupyter notebook (.ipynb) or a python script (.py).
             config_file: A Path to a TOML, JSON or Python file containing the
                 analysis configuration. Supported confugration options are:
                 dimensions, stop_on_error. If a Python file is used, it should
@@ -250,7 +252,7 @@ class MultiverseAnalysis:
         if dimensions is not None:
             self.dimensions = dimensions
 
-        self.notebook = notebook
+        self.universe_file = universe_file
         self.output_dir = output_dir
         if self.output_dir is not None:
             self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -446,9 +448,11 @@ class MultiverseAnalysis:
             )
             error_path.unlink()
 
+        universe_filetype = self.universe_file.suffix
+
         # Generate final command
-        output_dir = self.get_run_dir(sub_directory="notebooks")
-        output_filename = f"nb_{self.run_no}-{universe_id}.ipynb"
+        output_dir = self.get_run_dir(sub_directory="universes")
+        output_filename = f"nb_{self.run_no}-{universe_id}{universe_filetype}"
         output_path = output_dir / output_filename
 
         # Ensure output dir exists
@@ -465,13 +469,22 @@ class MultiverseAnalysis:
         settings_str = json.dumps(settings, sort_keys=True)
 
         try:
-            self.execute_notebook_via_api(
-                input_path=str(self.notebook),
-                output_path=str(output_path),
-                parameters={
-                    "settings": settings_str,
-                },
-            )
+            if universe_filetype == ".ipynb":
+                self.execute_notebook_via_api(
+                    input_path=str(self.universe_file),
+                    output_path=str(output_path),
+                    parameters={
+                        "settings": settings_str,
+                    },
+                )
+            elif universe_filetype == ".py":
+                self.execute_python_script(
+                    input_path=str(self.universe_file),
+                    output_path=str(output_path),
+                    parameters=settings,
+                )
+            else:
+                raise ValueError("Universe file must be a .ipynb or .py file.")
         except Exception as e:
             logger.error(f"Error in universe {universe_id} ({output_filename})")
             # Rename notebook file to indicate error
@@ -518,40 +531,6 @@ class MultiverseAnalysis:
         error_path = self._get_error_filepath(universe_id)
         df_error.to_csv(error_path, index=False)
 
-    def execute_notebook_via_cli(
-        self, input_path: str, output_path: str, parameters: Dict[str, str]
-    ):
-        """
-        Executes a notebook via the papermill command line interface.
-
-        Args:
-            input_path: The path to the input notebook.
-            output_path: The path to the output notebook.
-            parameters: A dictionary containing the parameters for the notebook.
-
-        Returns:
-            None
-        """
-        call_params = [
-            "papermill",
-            input_path,
-            output_path,
-        ]
-        if self.cell_timeout is not None:
-            call_params.append("--execution-timeout")
-            call_params.append(str(self.cell_timeout))
-
-        for key, value in parameters.items():
-            call_params.append("-p")
-            call_params.append(key)
-            call_params.append(value)
-
-        logger.info(" ".join(call_params))
-        # Call papermill render
-        process = subprocess.run(call_params, capture_output=True, text=True)
-        logger.info(process.stdout)
-        logger.info(process.stderr)
-
     def execute_notebook_via_api(
         self, input_path: str, output_path: str, parameters: Dict[str, str]
     ):
@@ -574,3 +553,37 @@ class MultiverseAnalysis:
             kernel_manager_class="multiversum.IPCKernelManager.IPCKernelManager",
             execution_timeout=self.cell_timeout,
         )
+
+    def execute_python_script(
+        self, input_path: str, output_path: Optional[str], parameters: Dict[str, Any]
+    ):
+        global_dict = {SCRIPT_GLOBAL_OVERWRITE_NAME: parameters}
+
+        if output_path is not None:
+            # Capture output
+            script_output_capture = io.StringIO()
+            with contextlib.redirect_stdout(script_output_capture):
+                runpy.run_path(input_path, init_globals=global_dict)
+        else:
+            # Keep output as-is
+            runpy.run_path(input_path, init_globals=global_dict)
+
+        # Copy input file to output file if no output file is specified
+        if output_path is not None:
+            with open(input_path, "r") as input_file:
+                with open(output_path, "w") as output_file:
+                    # Prepend brief statement and parameters
+                    output_file.write("# Generated by multiversum\n")
+                    output_file.write(
+                        "# Note: This file is only for illustrative purposes and the analysis itself may behave slightly differently.\n"
+                    )
+                    output_file.write(
+                        f"{SCRIPT_GLOBAL_OVERWRITE_NAME} = {json.dumps(parameters, indent=4)}\n\n"
+                    )
+                    # Prepend output from running the script
+                    script_output = script_output_capture.getvalue()
+                    script_output_escaped = script_output.replace("\n", "\n# ")
+                    output_file.write(f"# Output:\n# {script_output_escaped}\n\n")
+
+                    # Copy over script
+                    output_file.write(input_file.read())

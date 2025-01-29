@@ -111,7 +111,7 @@ class TestGenerateMultiverseGrid:
 class TestMultiverseAnalysis:
     def test_config_json(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "notebooks" / "simple_a.json", run_no=0
+            config_file=TEST_DIR / "scenarios" / "multiverse_simple_a.json", run_no=0
         )
         assert mv.dimensions == {
             "x": ["A", "B"],
@@ -120,7 +120,7 @@ class TestMultiverseAnalysis:
 
     def test_config_toml(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "notebooks" / "simple_b.toml", run_no=0
+            config_file=TEST_DIR / "scenarios" / "multiverse_simple_b.toml", run_no=0
         )
         assert mv.dimensions == {
             "x": ["B", "C"],
@@ -129,7 +129,7 @@ class TestMultiverseAnalysis:
 
     def test_config_py(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "notebooks" / "simple_c.py", run_no=0
+            config_file=TEST_DIR / "scenarios" / "multiverse_simple_c.py", run_no=0
         )
         assert mv.dimensions == {
             "x": ["C", "D"],
@@ -143,14 +143,41 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
-        mv.examine_multiverse()
+        mv.examine_multiverse(n_jobs=1)
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 4
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
+        assert count_files(output_dir, "counter.txt") == 1
+
+        # Check whether data aggregation works
+        aggregated_data = mv.aggregate_data(save=False)
+        assert not aggregated_data.empty
+        assert "value" in aggregated_data.columns
+
+        # Check whether missing universes remain
+        missing_info = mv.check_missing_universes()
+        assert len(missing_info["missing_universe_ids"]) == 0
+        assert len(missing_info["extra_universe_ids"]) == 0
+
+    def test_noteboook_simple_py(self):
+        output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple_py")
+        mv = MultiverseAnalysis(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            universe_file=TEST_DIR / "scenarios" / "universe_simple.py",
+            output_dir=output_dir,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        # Check whether all expected files are there
+        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/universes/*.py") == 4
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether data aggregation works
@@ -170,7 +197,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "error.ipynb",
+            universe_file=TEST_DIR / "scenarios" / "universe_error.ipynb",
             output_dir=output_dir,
         )
         mv.stop_on_error = False
@@ -187,8 +214,8 @@ class TestMultiverseAnalysis:
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 2
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
-        assert count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2, (
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
+        assert count_files(output_dir, "runs/1/universes/E_*.ipynb") == 2, (
             "Notebooks with errors are highlighted"
         )
         assert count_files(output_dir, "counter.txt") == 1
@@ -216,7 +243,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            notebook=TEST_DIR / "notebooks" / "slow.ipynb",
+            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
         )
         mv.cell_timeout = 1
@@ -225,7 +252,7 @@ class TestMultiverseAnalysis:
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 0
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 2
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 2
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
@@ -243,7 +270,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            notebook=TEST_DIR / "notebooks" / "slow.ipynb",
+            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
             cell_timeout=1,
             stop_on_error=False,
@@ -252,8 +279,8 @@ class TestMultiverseAnalysis:
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv") == 0
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 2
-        assert count_files(output_dir, "runs/1/notebooks/E_*.ipynb") == 2, (
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 2
+        assert count_files(output_dir, "runs/1/universes/E_*.ipynb") == 2, (
             "Notebooks with errors are highlighted"
         )
         assert count_files(output_dir, "counter.txt") == 1
@@ -282,11 +309,11 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            notebook=TEST_DIR / "notebooks" / "simple.ipynb",
+            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
         mv.visit_universe({"x": "A", "y": "B"})
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 1
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 1
 
 
 class TestUniverse:
@@ -363,28 +390,28 @@ class TestUniverse:
 class TestCLI:
     def test_simple(self):
         output_dir = get_temp_dir("test_CLI_simple")
-        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
-        config = TEST_DIR / "notebooks" / "simple_a.json"
+        notebook = TEST_DIR / "scenarios" / "universe_simple.ipynb"
+        config = TEST_DIR / "scenarios" / "multiverse_simple_a.json"
 
         # Run a test multiverse analysis via the CLI
         os.system(
-            f"python -m multiversum --notebook {notebook} --config {config} --output-dir {output_dir}"
+            f"python -m multiversum --universe {notebook} --config {config} --output-dir {output_dir}"
         )
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv.gz") == 1
         assert count_files(output_dir, "runs/1/data/*.csv") == 4
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 4
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
         assert count_files(output_dir, "counter.txt") == 1
         assert count_files(output_dir, "multiverse_grid.json") == 1
 
     def test_multiverse_py_empty(self):
         output_dir = get_temp_dir("test_multiverse_py_empty")
-        notebook = TEST_DIR / "notebooks" / "simple.ipynb"
+        notebook = TEST_DIR / "scenarios" / "universe_simple.ipynb"
 
         # Run a test multiverse analysis via the CLI
         wd = os.getcwd()
-        os.chdir(TEST_DIR / "notebooks")
+        os.chdir(TEST_DIR / "scenarios")
         os.system(
             f"python -m multiversum --notebook {notebook} --output-dir {output_dir}"
         )
@@ -393,7 +420,7 @@ class TestCLI:
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv.gz") == 0
         assert count_files(output_dir, "runs/1/data/*.csv") == 0
-        assert count_files(output_dir, "runs/1/notebooks/*.ipynb") == 0
+        assert count_files(output_dir, "runs/1/universes/*.ipynb") == 0
         assert count_files(output_dir, "counter.txt") == 0
         assert count_files(output_dir, "multiverse_grid.json") == 0
 

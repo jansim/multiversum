@@ -5,6 +5,7 @@ from .multiverse import DEFAULT_SEED, MultiverseAnalysis, add_ids_to_multiverse_
 from .logger import logger
 
 DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
+DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
 
 
 @click.command()
@@ -21,10 +22,10 @@ DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
     help=f"Relative path to a TOML, JSON or Python file with a config for the multiverse. Defaults to searching for {', '.join(DEFAULT_CONFIG_FILES)} (in that order).",
 )
 @click.option(
-    "--notebook",
+    "--universe",
     type=click.Path(),
-    default="./universe.ipynb",
-    help="Relative path to the notebook to run.",
+    default=None,
+    help=f"Relative path to the universe file to run. Defaults to searching for {', '.join(DEFAULT_UNIVERSE_FILES)} (in that order).",
 )
 @click.option(
     "--output-dir",
@@ -49,7 +50,7 @@ def cli(
     ctx,
     mode,
     config,
-    notebook,
+    universe,
     output_dir,
     seed,
     u_id,
@@ -65,10 +66,18 @@ def cli(
             if Path(file).is_file():
                 config_file = Path(file)
                 break
+    if universe is not None:
+        universe_file = Path(universe)
+    else:
+        universe_file = None
+        for file in DEFAULT_UNIVERSE_FILES:
+            if Path(file).is_file():
+                universe_file = Path(file)
+                break
 
     multiverse_analysis = MultiverseAnalysis(
         config_file=config_file,
-        notebook=Path(notebook),
+        universe_file=universe_file,
         output_dir=Path(output_dir),
         new_run=(mode != "continue"),
         seed=seed,

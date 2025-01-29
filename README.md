@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/jansim/multiversum/blob/main/LICENSE)
 
 <p align="center">
-  <img alt="multiversum logo" src="docs/assets/logo.svg" width="60%" align="center">
+  <img alt="multiversum logo" src="https://raw.githubusercontent.com/jansim/multiversum/main/docs/assets/logo.svg" width="60%" align="center">
 </p>
 
 `multiversum` is a package designed to make it easy to conduct multiverse analyses in Python. The package is intended to seemlessly integrate into a normal analysis or ML workflow and can also be added to an existing pipeline.

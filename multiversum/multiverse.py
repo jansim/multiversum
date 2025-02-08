@@ -11,11 +11,9 @@ import json
 import warnings
 import pandas as pd
 import papermill as pm
-from tqdm import tqdm
 import contextlib
 import io
 from joblib import Parallel, delayed, cpu_count
-from .parallel import tqdm_joblib
 from .logger import logger
 from .helpers import add_universe_info_to_df
 
@@ -25,6 +23,9 @@ if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib
+
+from rich.progress import Progress, track
+from .parallel import rich_joblib
 
 DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
@@ -406,21 +407,21 @@ class MultiverseAnalysis:
         # Run analysis for all universes
         if n_jobs == 1:
             logger.info("Running in single-threaded mode (njobs = 1).")
-            for universe_params in tqdm(multiverse_grid, desc="Visiting Universes"):
+            for universe_params in track(multiverse_grid, description="Visiting Universes"):
                 self.visit_universe(universe_params)
         else:
             logger.info(
                 f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
             )
-            with tqdm_joblib(
-                tqdm(desc="Visiting Universes", total=len(multiverse_grid), smoothing=0)
-            ) as progress_bar:  # noqa: F841
-                # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
-                # Thus for n_jobs = -2, all CPUs but one are used
-                Parallel(n_jobs=n_jobs)(
-                    delayed(self.visit_universe)(universe_params)
-                    for universe_params in multiverse_grid
-                )
+            with Progress(refresh_per_second = 1) as progress:
+                task_id = progress.add_task("Visiting Universes", total=len(multiverse_grid))
+                with rich_joblib(progress, task_id):
+                    # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
+                    # Thus for n_jobs = -2, all CPUs but one are used
+                    Parallel(n_jobs=n_jobs)(
+                        delayed(self.visit_universe)(universe_params)
+                        for universe_params in multiverse_grid
+                    )
 
     def visit_universe(self, universe_dimensions: Dict[str, str]) -> None:
         """

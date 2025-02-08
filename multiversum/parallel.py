@@ -5,29 +5,29 @@ universes in a multiverse analysis.
 
 import contextlib
 import joblib
+from rich.progress import Progress, TaskID
 
 
-# From https://stackoverflow.com/questions/24983493/tracking-progress-of-joblib-parallel-execution/58936697#58936697
 @contextlib.contextmanager
-def tqdm_joblib(tqdm_object):
-    """Context manager to patch joblib to report into tqdm progress bar given as argument.
+def rich_joblib(progress: Progress, task_id: TaskID):
+    """Context manager to patch joblib to report into rich progress bar.
 
     Args:
-        tqdm_object: The tqdm progress bar object to report progress to.
+        progress: The rich Progress instance to report to
+        task_id: The ID of the task to update
 
     Yields:
-        The tqdm progress bar object.
+        None
     """
 
-    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+    class RichBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
         def __call__(self, *args, **kwargs):
-            tqdm_object.update(n=self.batch_size)
+            progress.update(task_id, advance=self.batch_size)
             return super().__call__(*args, **kwargs)
 
     old_batch_callback = joblib.parallel.BatchCompletionCallBack
-    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    joblib.parallel.BatchCompletionCallBack = RichBatchCompletionCallback
     try:
-        yield tqdm_object
+        yield
     finally:
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
-        tqdm_object.close()

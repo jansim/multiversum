@@ -11,12 +11,12 @@ classifiers = [
 ]
 dependencies = [
     "pandas",
-    "tqdm",
     "papermill",
     "joblib",
     "ipykernel",
     'tomli >= 1.1.0 ; python_version < "3.11"',
-    "click"
+    "click",
+    "rich"
 ]
 
 [build-system]
@@ -36,3 +36,6 @@ docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.ruff]
 extend-exclude = ["tests/temp/"]
+
+[tool.setuptools]
+packages = ["multiversum"]

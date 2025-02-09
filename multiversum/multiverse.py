@@ -5,7 +5,7 @@ This module contains helper functions to orchestrate a multiverse analysis.
 import itertools
 from pathlib import Path
 import runpy
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Union
 from hashlib import md5
 import json
 import warnings
@@ -14,6 +14,7 @@ import papermill as pm
 from tqdm import tqdm
 import contextlib
 import io
+from dataclasses import dataclass
 from joblib import Parallel, delayed, cpu_count
 from .parallel import tqdm_joblib
 from .logger import logger
@@ -31,6 +32,7 @@ ERRORS_DIR_NAME = "errors"
 SCRIPT_GLOBAL_OVERWRITE_NAME = "MULTIVERSUM_OVERRIDE_SETTINGS"
 DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
 DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
+DEFAULT_STOP_ON_ERROR = True
 
 
 def generate_multiverse_grid(
@@ -152,8 +154,8 @@ def add_ids_to_multiverse_grid(
     return {generate_universe_id(u_params): u_params for u_params in multiverse_grid}
 
 
-def search_files(file: str, default_files: List[str]) -> Optional[Path]:
-    if file is not None:
+def search_files(file: Any, default_files: List[str]) -> Optional[Path]:
+    if file is not None and (isinstance(file, str) or isinstance(file, Path)):
         file_path = Path(file)
         if file_path.is_file():
             return file_path
@@ -166,6 +168,15 @@ def search_files(file: str, default_files: List[str]) -> Optional[Path]:
                 return default_file_path
 
     return None
+
+
+@dataclass
+class Config:
+    dimensions: Dict[str, Any]
+    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None
+    seed: Optional[int] = None
+    stop_on_error: Optional[bool] = None
+    cell_timeout: Optional[int] = None
 
 
 class MissingUniverseInfo(TypedDict):
@@ -192,20 +203,22 @@ class MultiverseAnalysis:
 
     dimensions = None
     constraints = None
-    config_file = None
-    output_dir = None
-    run_no = None
-    new_run = None
     seed = DEFAULT_SEED
-    grid = None
     cell_timeout = None
-    stop_on_error = True
+    stop_on_error = DEFAULT_STOP_ON_ERROR
+
+    run_no: int
+    new_run: bool
+    output_dir: Path
+    universe_file: Path
+
+    grid: Optional[List[Dict[str, Any]]] = None
 
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
+        config: Union[Path, Config, None] = None,
         universe: Path = None,
-        config: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
@@ -219,12 +232,13 @@ class MultiverseAnalysis:
         Args:
             dimensions: A dictionary containing the dimensions of the multiverse.
                 Each dimension corresponds to a decision.
+            config: A Path to a TOML, JSON or Python file containing the
+                analysis configuration. Supported confugration options can be
+                found in the Config class. If a Python file is used, it should
+                contain a dictionary / config object named "config".
+                Will automatically search for multiverse.toml / .json / .py.
             universe: The Path to the universe_file to run. Either an
                 ipython / jupyter notebook (.ipynb) or a python script (.py).
-            config: A Path to a TOML, JSON or Python file containing the
-                analysis configuration. Supported confugration options are:
-                dimensions, stop_on_error. If a Python file is used, it should
-                contain a dictionary named config.
             output_dir: The directory to store the output in.
             run_no: The number of the current run. Defaults to an automatically
                 incrementing integer number if new_run is True or the last run if
@@ -234,6 +248,7 @@ class MultiverseAnalysis:
             stop_on_error: Whether to stop the analysis if an error occurs.
             cell_timeout: A timeout (in seconds) for each cell in the notebook.
         """
+        # Check for configuration file and parse it
         config_file = search_files(file=config, default_files=DEFAULT_CONFIG_FILES)
         if isinstance(config_file, Path):
             if config_file.suffix == ".toml":
@@ -249,47 +264,49 @@ class MultiverseAnalysis:
                 raise ValueError(
                     "Only .toml, .json and .py files are supported as config."
                 )
+        # Convert config to Config object
+        if isinstance(config, dict):
+            config = Config(**config)
 
-            if "dimensions" in config:
-                assert dimensions is None
-                self.dimensions = config["dimensions"]
-
-            if "seed" in config:
-                if seed is None:
-                    self.seed = config["seed"]
-                else:
-                    warnings.warn(
-                        "Seed was specified in both the config file and as an argument. Using the argument value."
-                    )
-
-            if "stop_on_error" in config:
-                self.stop_on_error = config["stop_on_error"]
-
-            if "constraints" in config:
-                self.constraints = config["constraints"]
-
-        if dimensions is not None:
-            self.dimensions = dimensions
+        # Read settings from config (or args)
+        self.read_config_value(config, "dimensions", dimensions)
+        self.read_config_value(config, "seed", seed)
+        self.read_config_value(config, "stop_on_error", stop_on_error)
+        self.read_config_value(config, "cell_timeout", cell_timeout)
+        self.read_config_value(config, "constraints")
 
         universe_file = search_files(
             file=universe, default_files=DEFAULT_UNIVERSE_FILES
         )
         self.universe_file = universe_file
+
         self.output_dir = output_dir
         if self.output_dir is not None:
             self.output_dir.mkdir(parents=True, exist_ok=True)
-        if seed is not None:
-            self.seed = seed
+
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )
-        self.stop_on_error = stop_on_error
-        self.cell_timeout = cell_timeout
 
         if self.dimensions is None:
             raise ValueError(
                 "Dimensions need to be specified either directly or in a config."
             )
+
+    def read_config_value(
+        self, config: Optional[Config], key: str, overwrite_value: Optional[Any] = None
+    ):
+        config_value = getattr(config, key) if config is not None else None
+
+        if overwrite_value is not None:
+            if config_value is not None:
+                warnings.warn(
+                    f"Overwriting config value {key} ({config_value}) with {overwrite_value} as it was passed directly."
+                )
+            setattr(self, key, overwrite_value)
+        elif config_value is not None:
+            # Use value from config
+            setattr(self, key, config_value)
 
     def get_run_dir(self, sub_directory: Optional[str] = None) -> Path:
         """

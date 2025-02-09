@@ -17,6 +17,7 @@ import shutil
 import os
 
 from multiversum.helpers import add_universe_info_to_df
+from multiversum import Config
 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"
@@ -314,6 +315,24 @@ class TestMultiverseAnalysis:
         )
         mv.visit_universe({"x": "A", "y": "B"})
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 1
+
+
+class TestConfig:
+    def test_config(self):
+        config = Config(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            }
+        )
+        mv = MultiverseAnalysis(config=config)
+
+        assert mv.generate_grid(save=False) == generate_multiverse_grid(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            }
+        )
 
 
 class TestUniverse:

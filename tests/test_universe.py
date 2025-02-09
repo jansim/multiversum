@@ -1,7 +1,9 @@
+import random
+
+import numpy as np
 import pandas as pd
 import pytest
-import random
-import numpy as np
+
 from multiversum.universe import Universe, add_dict_to_df
 
 

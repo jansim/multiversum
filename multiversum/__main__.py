@@ -1,14 +1,15 @@
-import click
 from pathlib import Path
 
+import click
+
+from .logger import logger
 from .multiverse import (
-    DEFAULT_SEED,
     DEFAULT_CONFIG_FILES,
+    DEFAULT_SEED,
     DEFAULT_UNIVERSE_FILES,
     MultiverseAnalysis,
     add_ids_to_multiverse_grid,
 )
-from .logger import logger
 
 
 @click.command()

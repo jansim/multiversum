@@ -1,5 +1,6 @@
-from multiversum import Universe
 import pandas as pd
+
+from multiversum import Universe
 
 settings = {
     "dimensions": {

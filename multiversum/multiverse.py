@@ -2,20 +2,21 @@
 This module contains helper functions to orchestrate a multiverse analysis.
 """
 
-from pathlib import Path
-import runpy
-from typing import Any, Dict, List, Optional, TypedDict, Union
-import json
-import warnings
-import pandas as pd
-import papermill as pm
-from tqdm import tqdm
 import contextlib
 import io
+import json
+import runpy
+import sys
+import warnings
 from dataclasses import dataclass
-from joblib import Parallel, delayed, cpu_count
-from .parallel import tqdm_joblib
-from .logger import logger
+from pathlib import Path
+from typing import Any, Dict, List, Optional, TypedDict, Union
+
+import pandas as pd
+import papermill as pm
+from joblib import Parallel, cpu_count, delayed
+from tqdm import tqdm
+
 from .helpers import (
     add_ids_to_multiverse_grid,
     add_universe_info_to_df,
@@ -23,8 +24,8 @@ from .helpers import (
     generate_universe_id,
     search_files,
 )
-
-import sys
+from .logger import logger
+from .parallel import tqdm_joblib
 
 if sys.version_info >= (3, 11):
     import tomllib

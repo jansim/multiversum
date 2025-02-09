@@ -2,18 +2,19 @@
 a multiverse analysis.
 """
 
-from pathlib import Path
+import inspect
+import json
 import random
 import time
-import pandas as pd
-import json
-import numpy as np
 import warnings
-import inspect
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 from .helpers import add_universe_info_to_df
-from .multiverse import generate_multiverse_grid, SCRIPT_GLOBAL_OVERWRITE_NAME
+from .multiverse import SCRIPT_GLOBAL_OVERWRITE_NAME, generate_multiverse_grid
 
 
 def search_in_parent_frames(key):
@@ -320,24 +321,22 @@ class Universe:
         y_pred = predict_w_threshold(y_pred_prob, threshold)
 
         try:
-            from fairlearn.metrics import MetricFrame
-            from sklearn.metrics import (
-                accuracy_score,
-                precision_score,
-                balanced_accuracy_score,
-                f1_score,
-            )
             from fairlearn.metrics import (
-                false_positive_rate,
-                false_negative_rate,
-                selection_rate,
+                MetricFrame,
                 count,
-            )
-            from fairlearn.metrics import (
-                equalized_odds_difference,
-                equalized_odds_ratio,
                 demographic_parity_difference,
                 demographic_parity_ratio,
+                equalized_odds_difference,
+                equalized_odds_ratio,
+                false_negative_rate,
+                false_positive_rate,
+                selection_rate,
+            )
+            from sklearn.metrics import (
+                accuracy_score,
+                balanced_accuracy_score,
+                f1_score,
+                precision_score,
             )
 
             metrics = (

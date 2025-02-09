@@ -1,6 +1,6 @@
 from .multiverse import (
-    MultiverseAnalysis,
     Config,
+    MultiverseAnalysis,
 )
 from .universe import Universe
 

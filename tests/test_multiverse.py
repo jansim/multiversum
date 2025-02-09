@@ -1,25 +1,23 @@
 import logging
+import os
+import shutil
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import pytest
 from pandas.testing import assert_series_equal
 
-import pytest
 from multiversum import (
+    Config,
     MultiverseAnalysis,
     Universe,
 )
 from multiversum.helpers import (
+    add_universe_info_to_df,
     generate_multiverse_grid,
     generate_universe_id,
 )
-
-from pathlib import Path
-import shutil
-
-import os
-
-from multiversum.helpers import add_universe_info_to_df
-from multiversum import Config
 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"

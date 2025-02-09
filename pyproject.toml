@@ -36,6 +36,7 @@ docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.ruff]
 extend-exclude = ["tests/temp/"]
+lint.extend-select = ["I"]
 
 [tool.setuptools]
 packages = ["multiversum"]

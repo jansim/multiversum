@@ -2,22 +2,28 @@
 This module contains helper functions to orchestrate a multiverse analysis.
 """
 
-import itertools
-from pathlib import Path
-import runpy
-from typing import Any, Dict, List, Optional, TypedDict
-from hashlib import md5
-import json
-import warnings
-import pandas as pd
-import papermill as pm
 import contextlib
 import io
-from joblib import Parallel, delayed, cpu_count
-from .logger import logger
-from .helpers import add_universe_info_to_df
-
+import json
+import runpy
 import sys
+import warnings
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, TypedDict, Union
+
+import pandas as pd
+import papermill as pm
+from joblib import Parallel, cpu_count, delayed
+
+from .helpers import (
+    add_ids_to_multiverse_grid,
+    add_universe_info_to_df,
+    generate_multiverse_grid,
+    generate_universe_id,
+    search_files,
+)
+from .logger import logger
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -25,130 +31,52 @@ else:
     import tomli as tomllib
 
 from rich.progress import Progress, track
+
 from .parallel import rich_joblib
 
 DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
 SCRIPT_GLOBAL_OVERWRITE_NAME = "MULTIVERSUM_OVERRIDE_SETTINGS"
+DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
+DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
+DEFAULT_STOP_ON_ERROR = True
 
 
-def generate_multiverse_grid(
-    dimensions: Dict[str, List[str]],
-    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None,
-) -> List[Dict[str, Any]]:
+@dataclass
+class Config:
     """
-    Generate a full grid from a dictionary of dimensions.
+    Configuration for the multiverse analysis.
 
-    Args:
-        dimensions: A dictionary containing Lists with options.
-        constraints: An optional dictionary containing constraints for dimensions.
-
-    Returns:
-        A list of dicts containing all different combinations of the options.
-    """
-    if not dimensions:
-        raise ValueError("No (or empty) dimensions provided.")
-
-    keys, values = zip(*dimensions.items())
-    assert all(isinstance(k, str) for k in keys)
-    assert all(isinstance(v, list) for v in values)
-    # If we have lists of lists for dimensions (as is the case for sub-universes),
-    # we need to convert them to tuples to make them hashable
-    values_conv = [
-        [tuple(v) if isinstance(v, list) else v for v in dim] for dim in values
-    ]
-
-    if any(len(dim) != len(set(dim)) for dim in values_conv):
-        raise ValueError("Dimensions must not contain duplicate values.")
-
-    # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
-    multiverse_grid = [dict(zip(keys, v)) for v in itertools.product(*values_conv)]
-
-    if constraints:
-        multiverse_grid = apply_constraints(multiverse_grid, constraints)
-
-    return multiverse_grid
-
-
-def apply_constraints(
-    multiverse_grid: List[Dict[str, Any]], constraints: Dict[str, List[Dict[str, Any]]]
-) -> List[Dict[str, Any]]:
-    """
-    Apply constraints to filter out nonsensical dimension combinations.
-
-    Args:
-        multiverse_grid: A list of dictionaries containing the settings for different universes.
-        constraints: A dictionary containing constraints for dimensions.
-            Keys in the dict correspond to dimensions, values are lists of constraints.
-            Each constraint is a dictionary of the following structure:
-                - value: The value of the dimension that the constraint applies to.
-                - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
-                - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+    Attributes:
+        dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
+        constraints: Optional dictionary where keys are dimension names and values are lists of constraints. Each constraint is a dictionary with:
+            - value: The value of the dimension that the constraint applies to.
+            - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+            - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
             Only one of allowed_if and forbidden_if can be present in a constraint.
-
-    Returns:
-        A filtered list of dictionaries containing the settings for different universes.
+            Example:
+                constraints = {
+                    "dimension1": [
+                        {
+                            "value": "value1",
+                            "allowed_if": {"dimension2": "value2"}
+                        },
+                        {
+                            "value": "value3",
+                            "forbidden_if": {"dimension4": "value4"}
+                        }
+                    ]
+                }
+        seed: Optional seed for random number generation.
+        stop_on_error: Optional flag to stop on error.
+        cell_timeout: Optional timeout (in seconds) for each cell in the notebook.
     """
 
-    def is_allowed(universe: Dict[str, Any], constraint: Dict[str, Any]) -> bool:
-        if "allowed_if" in constraint:
-            for key, value in constraint["allowed_if"].items():
-                if universe.get(key) != value:
-                    return False
-        if "forbidden_if" in constraint:
-            for key, value in constraint["forbidden_if"].items():
-                if universe.get(key) == value:
-                    return False
-        return True
-
-    filtered_grid = []
-    for universe in multiverse_grid:
-        valid = True
-        for dimension, dimension_constraints in constraints.items():
-            for constraint in dimension_constraints:
-                if universe[dimension] == constraint["value"] and not is_allowed(
-                    universe, constraint
-                ):
-                    valid = False
-                    break
-            if not valid:
-                break
-        if valid:
-            filtered_grid.append(universe)
-
-    return filtered_grid
-
-
-def generate_universe_id(universe_parameters: Dict[str, Any]) -> str:
-    """
-    Generate a unique ID for a given universe.
-
-    Args:
-        universe_parameters: A dictionary containing the parameters for the universe.
-
-    Returns:
-        A unique ID for the universe.
-    """
-    # Note: Getting stable hashes seems to be easier said than done in Python
-    # See https://stackoverflow.com/questions/5884066/hashing-a-dictionary/22003440#22003440
-    return md5(
-        json.dumps(universe_parameters, sort_keys=True).encode("utf-8")
-    ).hexdigest()
-
-
-def add_ids_to_multiverse_grid(
-    multiverse_grid: List[Dict[str, Any]],
-) -> Dict[str, List[Dict[str, Any]]]:
-    """
-    Generates a dictionary of universe IDs mapped to their corresponding parameters.
-
-    Args:
-        multiverse_grid: A list of dictionaries, where each dictionary contains parameters for a universe.
-
-    Returns:
-        A dictionary where the keys are generated universe IDs and the values are the corresponding parameters.
-    """
-    return {generate_universe_id(u_params): u_params for u_params in multiverse_grid}
+    dimensions: Dict[str, Any]
+    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None
+    seed: Optional[int] = None
+    stop_on_error: Optional[bool] = None
+    cell_timeout: Optional[int] = None
 
 
 class MissingUniverseInfo(TypedDict):
@@ -162,33 +90,53 @@ class MultiverseAnalysis:
     This class orchestrates a multiverse analysis.
 
     Attributes:
-        dimensions: A dictionary containing the dimensions of the multiverse.
-        notebook: The Path to the notebook to run.
-        config_file: A Path to a JSON file containing the dimensions.
-        output_dir: The directory to store the output in.
+        dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
+        constraints: Optional dictionary where keys are dimension names and values are lists of constraints. Each constraint is a dictionary with:
+            - value: The value of the dimension that the constraint applies to.
+            - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+            - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+            Only one of allowed_if and forbidden_if can be present in a constraint.
+            Example:
+                constraints = {
+                    "dimension1": [
+                        {
+                            "value": "value1",
+                            "allowed_if": {"dimension2": "value2"}
+                        },
+                        {
+                            "value": "value3",
+                            "forbidden_if": {"dimension4": "value4"}
+                        }
+                    ]
+                }
+        seed: The seed to use for the analysis.
+        cell_timeout: A timeout (in seconds) for each cell in the notebook.
+        stop_on_error: Whether to stop the analysis if an error occurs.
         run_no: The number of the current run.
         new_run: Whether this is a new run or not.
-        seed: The seed to use for the analysis.
-        stop_on_error: Whether to stop the analysis if an error occurs.
-        cell_timeout: A timeout (in seconds) for each cell in the notebook.
+        output_dir: The directory to store the output in.
+        universe_file: The Path to the universe file to run.
+        grid: Optional list of dictionaries containing the settings for different universes.
     """
 
     dimensions = None
     constraints = None
-    config_file = None
-    output_dir = None
-    run_no = None
-    new_run = None
     seed = DEFAULT_SEED
-    grid = None
     cell_timeout = None
-    stop_on_error = True
+    stop_on_error = DEFAULT_STOP_ON_ERROR
+
+    run_no: int
+    new_run: bool
+    output_dir: Path
+    universe_file: Path
+
+    grid: Optional[List[Dict[str, Any]]] = None
 
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
-        universe_file: Path = Path("./universe.ipynb"),
-        config_file: Optional[Path] = None,
+        config: Union[Path, Config, None] = None,
+        universe: Path = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
@@ -200,14 +148,15 @@ class MultiverseAnalysis:
         Initializes a new MultiverseAnalysis instance.
 
         Args:
-            dimensions: A dictionary containing the dimensions of the multiverse.
+            dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
                 Each dimension corresponds to a decision.
-            universe_file: The Path to the universe_file to run. Either an
+            config: A Path to a TOML, JSON or Python file containing the
+                analysis configuration. Supported configuration options can be
+                found in the Config class. If a Python file is used, it should
+                contain a dictionary / config object named "config".
+                Will automatically search for multiverse.toml / .json / .py.
+            universe: The Path to the universe_file to run. Either an
                 ipython / jupyter notebook (.ipynb) or a python script (.py).
-            config_file: A Path to a TOML, JSON or Python file containing the
-                analysis configuration. Supported confugration options are:
-                dimensions, stop_on_error. If a Python file is used, it should
-                contain a dictionary named config.
             output_dir: The directory to store the output in.
             run_no: The number of the current run. Defaults to an automatically
                 incrementing integer number if new_run is True or the last run if
@@ -217,6 +166,8 @@ class MultiverseAnalysis:
             stop_on_error: Whether to stop the analysis if an error occurs.
             cell_timeout: A timeout (in seconds) for each cell in the notebook.
         """
+        # Check for configuration file and parse it
+        config_file = search_files(file=config, default_files=DEFAULT_CONFIG_FILES)
         if isinstance(config_file, Path):
             if config_file.suffix == ".toml":
                 with open(config_file, "rb") as fp:
@@ -231,44 +182,49 @@ class MultiverseAnalysis:
                 raise ValueError(
                     "Only .toml, .json and .py files are supported as config."
                 )
+        # Convert config to Config object
+        if isinstance(config, dict):
+            config = Config(**config)
 
-            if "dimensions" in config:
-                assert dimensions is None
-                self.dimensions = config["dimensions"]
+        # Read settings from config (or args)
+        self.read_config_value(config, "dimensions", dimensions)
+        self.read_config_value(config, "seed", seed)
+        self.read_config_value(config, "stop_on_error", stop_on_error)
+        self.read_config_value(config, "cell_timeout", cell_timeout)
+        self.read_config_value(config, "constraints")
 
-            if "seed" in config:
-                if seed is None:
-                    self.seed = config["seed"]
-                else:
-                    warnings.warn(
-                        "Seed was specified in both the config file and as an argument. Using the argument value."
-                    )
-
-            if "stop_on_error" in config:
-                self.stop_on_error = config["stop_on_error"]
-
-            if "constraints" in config:
-                self.constraints = config["constraints"]
-
-        if dimensions is not None:
-            self.dimensions = dimensions
-
+        universe_file = search_files(
+            file=universe, default_files=DEFAULT_UNIVERSE_FILES
+        )
         self.universe_file = universe_file
+
         self.output_dir = output_dir
         if self.output_dir is not None:
             self.output_dir.mkdir(parents=True, exist_ok=True)
-        if seed is not None:
-            self.seed = seed
+
         self.run_no = (
             run_no if run_no is not None else self.read_counter(increment=new_run)
         )
-        self.stop_on_error = stop_on_error
-        self.cell_timeout = cell_timeout
 
         if self.dimensions is None:
             raise ValueError(
                 "Dimensions need to be specified either directly or in a config."
             )
+
+    def read_config_value(
+        self, config: Optional[Config], key: str, overwrite_value: Optional[Any] = None
+    ):
+        config_value = getattr(config, key) if config is not None else None
+
+        if overwrite_value is not None:
+            if config_value is not None:
+                warnings.warn(
+                    f"Overwriting config value {key} ({config_value}) with {overwrite_value} as it was passed directly."
+                )
+            setattr(self, key, overwrite_value)
+        elif config_value is not None:
+            # Use value from config
+            setattr(self, key, config_value)
 
     def get_run_dir(self, sub_directory: Optional[str] = None) -> Path:
         """
@@ -407,14 +363,18 @@ class MultiverseAnalysis:
         # Run analysis for all universes
         if n_jobs == 1:
             logger.info("Running in single-threaded mode (njobs = 1).")
-            for universe_params in track(multiverse_grid, description="Visiting Universes"):
+            for universe_params in track(
+                multiverse_grid, description="Visiting Universes"
+            ):
                 self.visit_universe(universe_params)
         else:
             logger.info(
                 f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
             )
-            with Progress(refresh_per_second = 1) as progress:
-                task_id = progress.add_task("Visiting Universes", total=len(multiverse_grid))
+            with Progress(refresh_per_second=1) as progress:
+                task_id = progress.add_task(
+                    "Visiting Universes", total=len(multiverse_grid)
+                )
                 with rich_joblib(progress, task_id):
                     # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
                     # Thus for n_jobs = -2, all CPUs but one are used

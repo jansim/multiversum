@@ -4,6 +4,7 @@ universes in a multiverse analysis.
 """
 
 import contextlib
+
 import joblib
 from rich.progress import Progress, TaskID
 

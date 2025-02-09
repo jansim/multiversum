@@ -1,6 +1,19 @@
+import random
+
+import numpy as np
 import pandas as pd
 import pytest
-from multiversum.universe import add_dict_to_df
+
+from multiversum.universe import Universe, add_dict_to_df
+
+
+class TestUniverse:
+    def test_set_seeds(self):
+        # Initialize universe
+        Universe({"dimensions": []}, set_seed=True)
+
+        assert random.random() == 0.8444218515250481
+        assert np.random.randint(10000) == 2732
 
 
 class TestHelpers:

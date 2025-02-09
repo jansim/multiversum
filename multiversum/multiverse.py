@@ -7,6 +7,7 @@ import io
 import json
 import runpy
 import sys
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict, Union
@@ -429,22 +430,27 @@ class MultiverseAnalysis:
         settings_str = json.dumps(settings, sort_keys=True)
 
         try:
-            if universe_filetype == ".ipynb":
-                self.execute_notebook_via_api(
-                    input_path=str(self.universe_file),
-                    output_path=str(output_path),
-                    parameters={
-                        "settings": settings_str,
-                    },
-                )
-            elif universe_filetype == ".py":
-                self.execute_python_script(
-                    input_path=str(self.universe_file),
-                    output_path=str(output_path),
-                    parameters=settings,
-                )
-            else:
-                raise ValueError("Universe file must be a .ipynb or .py file.")
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                if universe_filetype == ".ipynb":
+                    self.execute_notebook_via_api(
+                        input_path=str(self.universe_file),
+                        output_path=str(output_path),
+                        parameters={
+                            "settings": settings_str,
+                        },
+                    )
+                elif universe_filetype == ".py":
+                    self.execute_python_script(
+                        input_path=str(self.universe_file),
+                        output_path=str(output_path),
+                        parameters=settings,
+                    )
+                else:
+                    raise ValueError("Universe file must be a .ipynb or .py file.")
+
+                for warning in w:
+                    logger.warning(f"Warning in universe {universe_id}: {warning.message}")
         except Exception as e:
             logger.error(f"Error in universe {universe_id} ({output_filename})")
             # Rename notebook file to indicate error

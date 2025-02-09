@@ -5,10 +5,12 @@ from pandas.testing import assert_series_equal
 
 import pytest
 from multiversum import (
-    generate_multiverse_grid,
-    generate_universe_id,
     MultiverseAnalysis,
     Universe,
+)
+from multiversum.helpers import (
+    generate_multiverse_grid,
+    generate_universe_id,
 )
 
 from pathlib import Path

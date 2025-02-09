@@ -218,7 +218,7 @@ class MultiverseAnalysis:
 
         if overwrite_value is not None:
             if config_value is not None:
-                warnings.warn(
+                logger.warning(
                     f"Overwriting config value {key} ({config_value}) with {overwrite_value} as it was passed directly."
                 )
             setattr(self, key, overwrite_value)
@@ -333,7 +333,7 @@ class MultiverseAnalysis:
         missing_universes = [multiverse_dict[u_id] for u_id in missing_universe_ids]
 
         if len(missing_universe_ids) > 0 or len(extra_universe_ids) > 0:
-            warnings.warn(
+            logger.warning(
                 f"Found missing {len(missing_universe_ids)} / "
                 f"additional {len(extra_universe_ids)} universe ids!"
             )
@@ -404,7 +404,7 @@ class MultiverseAnalysis:
         # Clean up any old error fiels
         error_path = self._get_error_filepath(universe_id)
         if error_path.is_file():
-            warnings.warn(
+            logger.warning(
                 f"Removing old error file: {error_path}. This should only happen during a re-run."
             )
             error_path.unlink()

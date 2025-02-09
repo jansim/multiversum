@@ -79,9 +79,9 @@ def cli(
         matching_values = [
             key for key in multiverse_dict.keys() if key.startswith(u_id)
         ]
-        assert len(matching_values) == 1, (
-            f"The id {u_id} matches {len(matching_values)} universe ids."
-        )
+        assert (
+            len(matching_values) == 1
+        ), f"The id {u_id} matches {len(matching_values)} universe ids."
         logger.info(f"Running only universe: {matching_values[0]}")
         multiverse_grid = [multiverse_dict[matching_values[0]]]
 

@@ -68,6 +68,7 @@ class Config:
         stop_on_error: Optional flag to stop on error.
         cell_timeout: Optional timeout (in seconds) for each cell in the notebook.
     """
+
     dimensions: Dict[str, Any]
     constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None
     seed: Optional[int] = None
@@ -114,6 +115,7 @@ class MultiverseAnalysis:
         universe_file: The Path to the universe file to run.
         grid: Optional list of dictionaries containing the settings for different universes.
     """
+
     dimensions = None
     constraints = None
     seed = DEFAULT_SEED

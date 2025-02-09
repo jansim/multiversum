@@ -139,7 +139,7 @@ class TestMultiverseAnalysis:
     def test_noteboook_simple(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
@@ -166,7 +166,7 @@ class TestMultiverseAnalysis:
     def test_noteboook_simple_py(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple_py")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
@@ -193,7 +193,7 @@ class TestMultiverseAnalysis:
     def test_noteboook_error(self, caplog):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_error")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
@@ -239,7 +239,7 @@ class TestMultiverseAnalysis:
     def test_noteboook_timeout(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_timeout")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A"],
             },
@@ -266,7 +266,7 @@ class TestMultiverseAnalysis:
             "test_MultiverseAnalysis_noteboook_timeout_without_stop"
         )
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A"],
             },
@@ -305,7 +305,7 @@ class TestMultiverseAnalysis:
     def test_visit_universe(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_visit_universe")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },

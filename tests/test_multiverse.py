@@ -111,7 +111,7 @@ class TestGenerateMultiverseGrid:
 class TestMultiverseAnalysis:
     def test_config_json(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_a.json", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_a.json", run_no=0
         )
         assert mv.dimensions == {
             "x": ["A", "B"],
@@ -120,7 +120,7 @@ class TestMultiverseAnalysis:
 
     def test_config_toml(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_b.toml", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_b.toml", run_no=0
         )
         assert mv.dimensions == {
             "x": ["B", "C"],
@@ -129,7 +129,7 @@ class TestMultiverseAnalysis:
 
     def test_config_py(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_c.py", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_c.py", run_no=0
         )
         assert mv.dimensions == {
             "x": ["C", "D"],
@@ -143,7 +143,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
         mv.examine_multiverse(n_jobs=1)
@@ -170,7 +170,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.py",
+            universe=TEST_DIR / "scenarios" / "universe_simple.py",
             output_dir=output_dir,
         )
         mv.examine_multiverse(n_jobs=1)
@@ -197,7 +197,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_error.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_error.ipynb",
             output_dir=output_dir,
         )
         mv.stop_on_error = False
@@ -243,7 +243,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
         )
         mv.cell_timeout = 1
@@ -270,7 +270,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
             cell_timeout=1,
             stop_on_error=False,
@@ -309,7 +309,7 @@ class TestMultiverseAnalysis:
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
         mv.visit_universe({"x": "A", "y": "B"})

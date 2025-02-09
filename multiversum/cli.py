@@ -1,11 +1,14 @@
 import click
 from pathlib import Path
 
-from .multiverse import DEFAULT_SEED, MultiverseAnalysis, add_ids_to_multiverse_grid
+from .multiverse import (
+    DEFAULT_SEED,
+    DEFAULT_CONFIG_FILES,
+    DEFAULT_UNIVERSE_FILES,
+    MultiverseAnalysis,
+    add_ids_to_multiverse_grid,
+)
 from .logger import logger
-
-DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
-DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
 
 
 @click.command()
@@ -58,26 +61,9 @@ def cli(
     """Run a multiverse analysis from the command line."""
     logger.debug(f"Parsed arguments: {ctx.params}")
 
-    if config is not None:
-        config_file = Path(config)
-    else:
-        config_file = None
-        for file in DEFAULT_CONFIG_FILES:
-            if Path(file).is_file():
-                config_file = Path(file)
-                break
-    if universe is not None:
-        universe_file = Path(universe)
-    else:
-        universe_file = None
-        for file in DEFAULT_UNIVERSE_FILES:
-            if Path(file).is_file():
-                universe_file = Path(file)
-                break
-
     multiverse_analysis = MultiverseAnalysis(
-        config_file=config_file,
-        universe_file=universe_file,
+        config=config,
+        universe=universe,
         output_dir=Path(output_dir),
         new_run=(mode != "continue"),
         seed=seed,

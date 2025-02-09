@@ -29,6 +29,8 @@ else:
 DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
 SCRIPT_GLOBAL_OVERWRITE_NAME = "MULTIVERSUM_OVERRIDE_SETTINGS"
+DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
+DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
 
 
 def generate_multiverse_grid(
@@ -150,6 +152,22 @@ def add_ids_to_multiverse_grid(
     return {generate_universe_id(u_params): u_params for u_params in multiverse_grid}
 
 
+def search_files(file: str, default_files: List[str]) -> Optional[Path]:
+    if file is not None:
+        file_path = Path(file)
+        if file_path.is_file():
+            return file_path
+        else:
+            raise FileNotFoundError
+    else:
+        for default_file in default_files:
+            default_file_path = Path(default_file)
+            if default_file_path.is_file():
+                return default_file_path
+
+    return None
+
+
 class MissingUniverseInfo(TypedDict):
     missing_universe_ids: List[str]
     extra_universe_ids: List[str]
@@ -186,8 +204,8 @@ class MultiverseAnalysis:
     def __init__(
         self,
         dimensions: Optional[Dict] = None,
-        universe_file: Path = Path("./universe.ipynb"),
-        config_file: Optional[Path] = None,
+        universe: Path = None,
+        config: Optional[Path] = None,
         output_dir: Path = Path("./output"),
         run_no: Optional[int] = None,
         new_run: bool = True,
@@ -201,9 +219,9 @@ class MultiverseAnalysis:
         Args:
             dimensions: A dictionary containing the dimensions of the multiverse.
                 Each dimension corresponds to a decision.
-            universe_file: The Path to the universe_file to run. Either an
+            universe: The Path to the universe_file to run. Either an
                 ipython / jupyter notebook (.ipynb) or a python script (.py).
-            config_file: A Path to a TOML, JSON or Python file containing the
+            config: A Path to a TOML, JSON or Python file containing the
                 analysis configuration. Supported confugration options are:
                 dimensions, stop_on_error. If a Python file is used, it should
                 contain a dictionary named config.
@@ -216,6 +234,7 @@ class MultiverseAnalysis:
             stop_on_error: Whether to stop the analysis if an error occurs.
             cell_timeout: A timeout (in seconds) for each cell in the notebook.
         """
+        config_file = search_files(file=config, default_files=DEFAULT_CONFIG_FILES)
         if isinstance(config_file, Path):
             if config_file.suffix == ".toml":
                 with open(config_file, "rb") as fp:
@@ -252,6 +271,9 @@ class MultiverseAnalysis:
         if dimensions is not None:
             self.dimensions = dimensions
 
+        universe_file = search_files(
+            file=universe, default_files=DEFAULT_UNIVERSE_FILES
+        )
         self.universe_file = universe_file
         self.output_dir = output_dir
         if self.output_dir is not None:

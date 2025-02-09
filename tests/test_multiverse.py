@@ -5,10 +5,12 @@ from pandas.testing import assert_series_equal
 
 import pytest
 from multiversum import (
-    generate_multiverse_grid,
-    generate_universe_id,
     MultiverseAnalysis,
     Universe,
+)
+from multiversum.helpers import (
+    generate_multiverse_grid,
+    generate_universe_id,
 )
 
 from pathlib import Path
@@ -17,6 +19,7 @@ import shutil
 import os
 
 from multiversum.helpers import add_universe_info_to_df
+from multiversum import Config
 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DIR = ROOT_DIR / "tests"
@@ -111,7 +114,7 @@ class TestGenerateMultiverseGrid:
 class TestMultiverseAnalysis:
     def test_config_json(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_a.json", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_a.json", run_no=0
         )
         assert mv.dimensions == {
             "x": ["A", "B"],
@@ -120,7 +123,7 @@ class TestMultiverseAnalysis:
 
     def test_config_toml(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_b.toml", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_b.toml", run_no=0
         )
         assert mv.dimensions == {
             "x": ["B", "C"],
@@ -129,7 +132,7 @@ class TestMultiverseAnalysis:
 
     def test_config_py(self):
         mv = MultiverseAnalysis(
-            config_file=TEST_DIR / "scenarios" / "multiverse_simple_c.py", run_no=0
+            config=TEST_DIR / "scenarios" / "multiverse_simple_c.py", run_no=0
         )
         assert mv.dimensions == {
             "x": ["C", "D"],
@@ -139,11 +142,11 @@ class TestMultiverseAnalysis:
     def test_noteboook_simple(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
         mv.examine_multiverse(n_jobs=1)
@@ -166,11 +169,11 @@ class TestMultiverseAnalysis:
     def test_noteboook_simple_py(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_simple_py")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.py",
+            universe=TEST_DIR / "scenarios" / "universe_simple.py",
             output_dir=output_dir,
         )
         mv.examine_multiverse(n_jobs=1)
@@ -193,11 +196,11 @@ class TestMultiverseAnalysis:
     def test_noteboook_error(self, caplog):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_error")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_error.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_error.ipynb",
             output_dir=output_dir,
         )
         mv.stop_on_error = False
@@ -239,11 +242,11 @@ class TestMultiverseAnalysis:
     def test_noteboook_timeout(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_timeout")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
         )
         mv.cell_timeout = 1
@@ -266,11 +269,11 @@ class TestMultiverseAnalysis:
             "test_MultiverseAnalysis_noteboook_timeout_without_stop"
         )
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_slow.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_slow.ipynb",
             output_dir=output_dir,
             cell_timeout=1,
             stop_on_error=False,
@@ -305,15 +308,33 @@ class TestMultiverseAnalysis:
     def test_visit_universe(self):
         output_dir = get_temp_dir("test_MultiverseAnalysis_visit_universe")
         mv = MultiverseAnalysis(
-            {
+            dimensions={
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             },
-            universe_file=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
             output_dir=output_dir,
         )
         mv.visit_universe({"x": "A", "y": "B"})
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 1
+
+
+class TestConfig:
+    def test_config(self):
+        config = Config(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            }
+        )
+        mv = MultiverseAnalysis(config=config)
+
+        assert mv.generate_grid(save=False) == generate_multiverse_grid(
+            {
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            }
+        )
 
 
 class TestUniverse:

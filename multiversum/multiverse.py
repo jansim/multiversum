@@ -30,7 +30,15 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from rich.progress import Progress, track
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    track,
+)
 
 from .parallel import rich_joblib
 
@@ -371,10 +379,17 @@ class MultiverseAnalysis:
             logger.info(
                 f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
             )
-            with Progress(refresh_per_second=1) as progress:
-                task_id = progress.add_task(
-                    "Visiting Universes", total=len(multiverse_grid)
-                )
+            with Progress(
+                TextColumn("[progress.description]{task.description}"),
+                "[progress.completed]{task.completed}/{task.total}",
+                BarColumn(),
+                TaskProgressColumn(),
+                TimeElapsedColumn(),
+                "•",
+                TimeRemainingColumn(),
+                refresh_per_second=1,
+            ) as progress:
+                task_id = progress.add_task("Running", total=len(multiverse_grid))
                 with rich_joblib(progress, task_id):
                     # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
                     # Thus for n_jobs = -2, all CPUs but one are used
@@ -450,7 +465,9 @@ class MultiverseAnalysis:
                     raise ValueError("Universe file must be a .ipynb or .py file.")
 
                 for warning in w:
-                    logger.warning(f"Warning in universe {universe_id}: {warning.message}")
+                    logger.warning(
+                        f"Warning in universe {universe_id}: {warning.message}"
+                    )
         except Exception as e:
             logger.error(f"Error in universe {universe_id} ({output_filename})")
             # Rename notebook file to indicate error

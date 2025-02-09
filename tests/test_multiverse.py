@@ -222,8 +222,9 @@ class TestMultiverseAnalysis:
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
-        with pytest.warns(UserWarning):
+        with caplog.at_level(logging.WARNING):
             missing_info = mv.check_missing_universes()
+        assert "Found missing" in caplog.text
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 
@@ -237,7 +238,7 @@ class TestMultiverseAnalysis:
             ),
         )
 
-    def test_noteboook_timeout(self):
+    def test_noteboook_timeout(self, caplog):
         output_dir = get_temp_dir("test_MultiverseAnalysis_noteboook_timeout")
         mv = MultiverseAnalysis(
             dimensions={
@@ -257,8 +258,9 @@ class TestMultiverseAnalysis:
         assert count_files(output_dir, "counter.txt") == 1
 
         # Check whether missing universes remain
-        with pytest.warns(UserWarning):
+        with caplog.at_level(logging.WARNING):
             missing_info = mv.check_missing_universes()
+        assert "Found missing" in caplog.text
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 

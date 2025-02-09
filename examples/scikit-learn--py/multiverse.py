@@ -1,7 +1,9 @@
-config = {
-    "dimensions": {
+from multiversum import Config
+
+config = Config(
+    dimensions = {
         "scaler": ["StandardScaler", "MinMaxScaler", "no-scaler"],
         "feature_selector": ["SelectKBest_5", "SelectKBest_10", "use-all-features"],
         "model": ["LogisticRegression", "DecisionTree", "RandomForest"],
     }
-}
+)

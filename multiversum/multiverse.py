@@ -41,6 +41,33 @@ DEFAULT_STOP_ON_ERROR = True
 
 @dataclass
 class Config:
+    """
+    Configuration for the multiverse analysis.
+
+    Attributes:
+        dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
+        constraints: Optional dictionary where keys are dimension names and values are lists of constraints. Each constraint is a dictionary with:
+            - value: The value of the dimension that the constraint applies to.
+            - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+            - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+            Only one of allowed_if and forbidden_if can be present in a constraint.
+            Example:
+                constraints = {
+                    "dimension1": [
+                        {
+                            "value": "value1",
+                            "allowed_if": {"dimension2": "value2"}
+                        },
+                        {
+                            "value": "value3",
+                            "forbidden_if": {"dimension4": "value4"}
+                        }
+                    ]
+                }
+        seed: Optional seed for random number generation.
+        stop_on_error: Optional flag to stop on error.
+        cell_timeout: Optional timeout (in seconds) for each cell in the notebook.
+    """
     dimensions: Dict[str, Any]
     constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None
     seed: Optional[int] = None
@@ -59,17 +86,34 @@ class MultiverseAnalysis:
     This class orchestrates a multiverse analysis.
 
     Attributes:
-        dimensions: A dictionary containing the dimensions of the multiverse.
-        notebook: The Path to the notebook to run.
-        config_file: A Path to a JSON file containing the dimensions.
-        output_dir: The directory to store the output in.
+        dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
+        constraints: Optional dictionary where keys are dimension names and values are lists of constraints. Each constraint is a dictionary with:
+            - value: The value of the dimension that the constraint applies to.
+            - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+            - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+            Only one of allowed_if and forbidden_if can be present in a constraint.
+            Example:
+                constraints = {
+                    "dimension1": [
+                        {
+                            "value": "value1",
+                            "allowed_if": {"dimension2": "value2"}
+                        },
+                        {
+                            "value": "value3",
+                            "forbidden_if": {"dimension4": "value4"}
+                        }
+                    ]
+                }
+        seed: The seed to use for the analysis.
+        cell_timeout: A timeout (in seconds) for each cell in the notebook.
+        stop_on_error: Whether to stop the analysis if an error occurs.
         run_no: The number of the current run.
         new_run: Whether this is a new run or not.
-        seed: The seed to use for the analysis.
-        stop_on_error: Whether to stop the analysis if an error occurs.
-        cell_timeout: A timeout (in seconds) for each cell in the notebook.
+        output_dir: The directory to store the output in.
+        universe_file: The Path to the universe file to run.
+        grid: Optional list of dictionaries containing the settings for different universes.
     """
-
     dimensions = None
     constraints = None
     seed = DEFAULT_SEED
@@ -99,10 +143,10 @@ class MultiverseAnalysis:
         Initializes a new MultiverseAnalysis instance.
 
         Args:
-            dimensions: A dictionary containing the dimensions of the multiverse.
+            dimensions: A dictionary where keys are dimension names and values are lists of possible values for each dimension.
                 Each dimension corresponds to a decision.
             config: A Path to a TOML, JSON or Python file containing the
-                analysis configuration. Supported confugration options can be
+                analysis configuration. Supported configuration options can be
                 found in the Config class. If a Python file is used, it should
                 contain a dictionary / config object named "config".
                 Will automatically search for multiverse.toml / .json / .py.

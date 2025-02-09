@@ -7,7 +7,6 @@ import io
 import json
 import runpy
 import sys
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict, Union

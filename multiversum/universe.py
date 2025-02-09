@@ -213,6 +213,7 @@ class Universe:
             warnings.warn("No dimensions specified for universe analysis.")
 
         if set_seed:
+            print(f"Setting seed to {self.seed} (in: [random, numpy.random]).")
             random.seed(self.seed)
             np.random.seed(self.seed)
 

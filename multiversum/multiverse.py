@@ -32,12 +32,13 @@ else:
 
 from rich.progress import (
     BarColumn,
+    MofNCompleteColumn,
     Progress,
+    SpinnerColumn,
     TaskProgressColumn,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    track,
 )
 
 from .parallel import rich_joblib
@@ -353,7 +354,7 @@ class MultiverseAnalysis:
         }
 
     def examine_multiverse(
-        self, multiverse_grid: List[Dict[str, Any]] = None, n_jobs: int = -2
+        self, multiverse_grid: List[Dict[str, Any]] = None, n_jobs: int = 1
     ) -> None:
         """
         Run the analysis for all universes in the multiverse.
@@ -369,27 +370,30 @@ class MultiverseAnalysis:
             multiverse_grid = self.grid or self.generate_grid(save=False)
 
         # Run analysis for all universes
-        if n_jobs == 1:
-            logger.info("Running in single-threaded mode (njobs = 1).")
-            for universe_params in track(
-                multiverse_grid, description="Visiting Universes"
-            ):
-                self.visit_universe(universe_params)
-        else:
-            logger.info(
-                f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
-            )
-            with Progress(
-                TextColumn("[progress.description]{task.description}"),
-                "[progress.completed]{task.completed}/{task.total}",
-                BarColumn(),
-                TaskProgressColumn(),
-                TimeElapsedColumn(),
-                "•",
-                TimeRemainingColumn(),
-                refresh_per_second=1,
-            ) as progress:
-                task_id = progress.add_task("Running", total=len(multiverse_grid))
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            SpinnerColumn(),
+            TaskProgressColumn(),
+            BarColumn(bar_width=None),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            TextColumn("•"),
+            TimeRemainingColumn(),
+            expand=True,
+        ) as progress:
+            task_id = progress.add_task("Running", total=len(multiverse_grid))
+            if n_jobs == 1:
+                logger.info("Running in single-threaded mode (njobs = 1).")
+                for universe_params in multiverse_grid:
+                    self.visit_universe(universe_params)
+                    progress.update(task_id, advance=1)
+                    # Somehow automatic updating is not working in single threaded mode, so we manually refresh
+                    progress.refresh()
+            else:
+                logger.info(
+                    f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
+                )
                 with rich_joblib(progress, task_id):
                     # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
                     # Thus for n_jobs = -2, all CPUs but one are used

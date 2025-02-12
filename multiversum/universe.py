@@ -149,6 +149,7 @@ class Universe:
         settings: Union[str, Dict[str, Any]],
         metrics: Optional[Dict[str, Callable]] = None,
         fairness_metrics: Optional[Dict[str, Callable]] = None,
+        expand_dicts: bool = False,
         set_seed: bool = True,
     ) -> None:
         """
@@ -172,6 +173,9 @@ class Universe:
             fairness_metrics: A dictionary containing the fairness metrics to be
                 computed. (These are cumputed with awareness of groups.)
                 Pass an empty dictionary to not compute any.
+            expand_dicts: Whether to expand dictionaries in the dimensions i.e.
+                if there are any dictionaries in the dimensions, expand them into
+                separate dimensions of their own. Defaults to False.
             set_seed: Whether to use the seed provided in the settings.
                 Defaults to True. Please note, that this only sets the seed in
                 the Python random module and numpy.
@@ -200,6 +204,13 @@ class Universe:
             else "no-universe-id-provided"
         )
         self.dimensions = parsed_settings["dimensions"]
+        if expand_dicts:
+            # If there are any dictionaries in the dimensions, expand them into separate values
+            for key, value in self.dimensions.items():
+                if isinstance(value, dict):
+                    self.dimensions.update(value)
+                    del self.dimensions[key]
+
         self.seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
         self.output_dir = (
             Path(parsed_settings["output_dir"])

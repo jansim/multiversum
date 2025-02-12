@@ -55,8 +55,8 @@ class TestGenerateMultiverseGrid:
 
     def test_grid_sub_universes(self):
         assert generate_multiverse_grid({"x": [1, 2], "y": [[3, 4]]}) == [
-            {"x": 1, "y": (3, 4)},
-            {"x": 2, "y": (3, 4)},
+            {"x": 1, "y": [3, 4]},
+            {"x": 2, "y": [3, 4]},
         ]
 
     def test_edge_cases(self):
@@ -488,13 +488,19 @@ class TestHelpers:
         dimensions = {"x": [1, 2], "y": [3, 4]}
         keys, values = validate_dimensions(dimensions)
         assert keys == ("x", "y")
-        assert values == [[1, 2], [3, 4]]
+        assert values == ([1, 2], [3, 4])
+
+    def test_validate_dimensions_with_dict(self):
+        dimensions = {"x": [1, 2], "y": [{"a": 1, "b": 2}, {"a": 3, "b": 4}]}
+        keys, values = validate_dimensions(dimensions)
+        assert keys == tuple(dimensions.keys())
+        assert values == tuple(dimensions.values())
 
     def test_validate_dimensions_with_nested_lists(self):
         dimensions = {"x": [1, 2], "y": [[3, 4], [5, 6]]}
         keys, values = validate_dimensions(dimensions)
         assert keys == ("x", "y")
-        assert values == [[1, 2], [(3, 4), (5, 6)]]
+        assert values == ([1, 2], [[3, 4], [5, 6]])
 
     def test_validate_dimensions_empty(self):
         with pytest.raises(ValueError, match="No \\(or empty\\) dimensions provided."):
@@ -544,8 +550,8 @@ class TestHelpers:
         grid = generate_minimal_multiverse_grid(dimensions)
         assert len(grid) == 2
         assert grid == [
-            {"x": 1, "y": (3, 4)},
-            {"x": 2, "y": (5, 6)},
+            {"x": 1, "y": [3, 4]},
+            {"x": 2, "y": [5, 6]},
         ]
 
     def test_generate_minimal_multiverse_grid_with_constraints(self):

@@ -354,7 +354,7 @@ class MultiverseAnalysis:
         }
 
     def examine_multiverse(
-        self, multiverse_grid: List[Dict[str, Any]] = None, n_jobs: int = 1
+        self, multiverse_grid: List[Dict[str, Any]] = None, n_jobs: int = -2
     ) -> None:
         """
         Run the analysis for all universes in the multiverse.

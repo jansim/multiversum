@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import click
+from rich.console import Console
+from rich.panel import Panel
 
 from .logger import logger
 from .multiverse import (
@@ -71,7 +73,28 @@ def cli(
     )
 
     multiverse_grid = multiverse_analysis.generate_grid(save=True)
-    logger.info(f"Generated N = {len(multiverse_grid)} universes")
+
+    # Set panel style based on mode
+    MODE_DESCRIPTIONS = {
+        "full": "Full Run",
+        "continue": "Continuing Previous Run",
+        "test": "Test Run",
+    }
+
+    MODE_STYLES = {"full": "green", "continue": "yellow", "test": "magenta"}
+
+    # Initialize rich console
+    console = Console()
+    console.print(
+        Panel.fit(
+            f"Generated [bold cyan]N = {len(multiverse_grid)}[/bold cyan] universes\n"
+            f"Mode: [bold {MODE_STYLES[mode]}]{MODE_DESCRIPTIONS[mode]}[/bold {MODE_STYLES[mode]}]\n"
+            f"Run No.: [bold cyan]{multiverse_analysis.run_no}[/bold cyan]\n"
+            f"Seed: [bold cyan]{multiverse_analysis.seed}[/bold cyan]",
+            title="multiversum: Multiverse Analysis",
+            border_style=MODE_STYLES[mode],
+        )
+    )
 
     if u_id is not None:
         # Search for this particular universe
@@ -82,21 +105,19 @@ def cli(
         assert len(matching_values) == 1, (
             f"The id {u_id} matches {len(matching_values)} universe ids."
         )
-        logger.info(f"Running only universe: {matching_values[0]}")
+        console.print(
+            f"[bold yellow]Running only universe:[/bold yellow] {matching_values[0]}"
+        )
         multiverse_grid = [multiverse_dict[matching_values[0]]]
-
-    logger.info(
-        f"~ Starting Run No. {multiverse_analysis.run_no} (Seed: {multiverse_analysis.seed}) ~"
-    )
 
     # Run the analysis for the first universe
     if mode == "test":
-        logger.info("Test Run")
         minimal_grid = multiverse_analysis.generate_minimal_grid()
-        logger.info(f"Generated minimal test grid with {len(minimal_grid)} universes")
+        console.print(
+            f"Generated minimal test grid with [bold cyan]{len(minimal_grid)}[/bold cyan] universes"
+        )
         multiverse_analysis.examine_multiverse(minimal_grid)
     elif mode == "continue":
-        logger.info("Continuing Previous Run")
         missing_universes = multiverse_analysis.check_missing_universes()[
             "missing_universes"
         ]
@@ -104,11 +125,11 @@ def cli(
         # Run analysis only for missing universes
         multiverse_analysis.examine_multiverse(missing_universes)
     else:
-        logger.info("Full Run")
         # Run analysis for all universes
         multiverse_analysis.examine_multiverse(multiverse_grid)
 
-    multiverse_analysis.aggregate_data(save=True)
+    with console.status("[bold green]Aggregating data...[/bold green]"):
+        multiverse_analysis.aggregate_data(save=True)
 
     multiverse_analysis.check_missing_universes()
 

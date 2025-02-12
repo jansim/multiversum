@@ -56,7 +56,7 @@ def validate_dimensions(dimensions: Dict[str, Any]) -> Tuple[Tuple[str, ...], Li
     Returns:
         A tuple containing:
             - A tuple of dimension names (keys)
-            - A list of processed dimension values with nested lists converted to tuples (values)
+            - A list of dimension values (values)
 
     Raises:
         ValueError: If dimensions are empty or contain invalid values.
@@ -70,16 +70,23 @@ def validate_dimensions(dimensions: Dict[str, Any]) -> Tuple[Tuple[str, ...], Li
     if not all(isinstance(v, list) for v in values):
         raise ValueError("All dimension values must be lists.")
 
-    # If we have lists of lists for dimensions (as is the case for sub-universes),
-    # we need to convert them to tuples to make them hashable
-    values_conv = [
-        [tuple(v) if isinstance(v, list) else v for v in dim] for dim in values
-    ]
+    values_conv = []
+    for dim in values:
+        dim_conv = []
+        for v in dim:
+            if isinstance(v, (list, dict)):
+                v_hashable = (
+                    tuple(sorted(v.items())) if isinstance(v, dict) else tuple(v)
+                )
+                dim_conv.append(v_hashable)
+            else:
+                dim_conv.append(v)
+        values_conv.append(dim_conv)
 
     if any(len(dim) != len(set(dim)) for dim in values_conv):
         raise ValueError("Dimensions must not contain duplicate values.")
 
-    return keys, values_conv
+    return keys, values
 
 
 def generate_minimal_multiverse_grid(

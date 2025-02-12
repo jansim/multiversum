@@ -75,9 +75,7 @@ def validate_dimensions(dimensions: Dict[str, Any]) -> Tuple[Tuple[str, ...], Li
         dim_conv = []
         for v in dim:
             if isinstance(v, (list, dict)):
-                v_hashable = (
-                    tuple(sorted(v.items())) if isinstance(v, dict) else tuple(v)
-                )
+                v_hashable = json.dumps(v, sort_keys=True)
                 dim_conv.append(v_hashable)
             else:
                 dim_conv.append(v)

@@ -15,8 +15,10 @@ from multiversum import (
 )
 from multiversum.helpers import (
     add_universe_info_to_df,
+    generate_minimal_multiverse_grid,
     generate_multiverse_grid,
     generate_universe_id,
+    validate_dimensions,
 )
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -60,9 +62,9 @@ class TestGenerateMultiverseGrid:
         # Test with empty dimensions
         with pytest.raises(ValueError):
             generate_multiverse_grid({})
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             generate_multiverse_grid({"x": "hello"})
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             generate_multiverse_grid({12: [1, 2, 3]})
         # Test with single dimension
         assert generate_multiverse_grid({"x": [1, 2, 3]}) == [
@@ -480,3 +482,67 @@ class TestHelpers:
                 index=["test_universe"],
             ),
         )
+
+    def test_validate_dimensions_valid(self):
+        dimensions = {"x": [1, 2], "y": [3, 4]}
+        keys, values = validate_dimensions(dimensions)
+        assert keys == ("x", "y")
+        assert values == [[1, 2], [3, 4]]
+
+    def test_validate_dimensions_with_nested_lists(self):
+        dimensions = {"x": [1, 2], "y": [[3, 4], [5, 6]]}
+        keys, values = validate_dimensions(dimensions)
+        assert keys == ("x", "y")
+        assert values == [[1, 2], [(3, 4), (5, 6)]]
+
+    def test_validate_dimensions_empty(self):
+        with pytest.raises(ValueError, match="No \\(or empty\\) dimensions provided."):
+            validate_dimensions({})
+
+    def test_validate_dimensions_invalid_key_type(self):
+        with pytest.raises(ValueError, match="All dimension names must be strings."):
+            validate_dimensions({123: [1, 2]})
+
+    def test_validate_dimensions_invalid_value_type(self):
+        with pytest.raises(ValueError, match="All dimension values must be lists."):
+            validate_dimensions({"x": "not_a_list"})
+
+    def test_validate_dimensions_duplicates(self):
+        with pytest.raises(
+            ValueError, match="Dimensions must not contain duplicate values."
+        ):
+            validate_dimensions({"x": [1, 1, 2]})
+
+    def test_generate_minimal_multiverse_grid_basic(self):
+        dimensions = {"x": [1, 2], "y": [3, 4]}
+        grid = generate_minimal_multiverse_grid(dimensions)
+        assert len(grid) == 2
+        assert grid == [
+            {"x": 1, "y": 3},
+            {"x": 2, "y": 4},
+        ]
+
+    def test_generate_minimal_multiverse_grid_uneven(self):
+        dimensions = {"x": [1, 2, 3], "y": [4, 5]}
+        grid = generate_minimal_multiverse_grid(dimensions)
+        assert len(grid) == 3
+        assert grid == [
+            {"x": 1, "y": 4},
+            {"x": 2, "y": 5},
+            {"x": 3, "y": 4},  # Cycles back to first y value
+        ]
+
+    def test_generate_minimal_multiverse_grid_single_value(self):
+        dimensions = {"x": [1], "y": [2]}
+        grid = generate_minimal_multiverse_grid(dimensions)
+        assert len(grid) == 1
+        assert grid == [{"x": 1, "y": 2}]
+
+    def test_generate_minimal_multiverse_grid_with_nested_lists(self):
+        dimensions = {"x": [1, 2], "y": [[3, 4], [5, 6]]}
+        grid = generate_minimal_multiverse_grid(dimensions)
+        assert len(grid) == 2
+        assert grid == [
+            {"x": 1, "y": (3, 4)},
+            {"x": 2, "y": (5, 6)},
+        ]

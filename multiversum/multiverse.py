@@ -151,7 +151,7 @@ class MultiverseAnalysis:
         run_no: Optional[int] = None,
         new_run: bool = True,
         seed: Optional[int] = None,
-        stop_on_error: bool = True,
+        stop_on_error: Optional[bool] = None,
         cell_timeout: Optional[int] = None,
     ) -> None:
         """

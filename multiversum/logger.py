@@ -1,10 +1,13 @@
 import logging
-import sys
 
+from rich.logging import RichHandler
+
+# Configure logger
 logger = logging.getLogger("multiversum")
-logger.setLevel(logging.INFO)
 
-if not logger.hasHandlers():
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
-    logger.addHandler(handler)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()],
+)

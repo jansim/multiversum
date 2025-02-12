@@ -15,7 +15,6 @@ from typing import Any, Dict, List, Optional, TypedDict, Union
 import pandas as pd
 import papermill as pm
 from joblib import Parallel, cpu_count, delayed
-from tqdm import tqdm
 
 from .helpers import (
     add_ids_to_multiverse_grid,
@@ -25,12 +24,24 @@ from .helpers import (
     search_files,
 )
 from .logger import logger
-from .parallel import tqdm_joblib
 
 if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib
+
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
+
+from .parallel import rich_joblib
 
 DEFAULT_SEED = 80539
 ERRORS_DIR_NAME = "errors"
@@ -216,7 +227,7 @@ class MultiverseAnalysis:
 
         if overwrite_value is not None:
             if config_value is not None:
-                warnings.warn(
+                logger.warning(
                     f"Overwriting config value {key} ({config_value}) with {overwrite_value} as it was passed directly."
                 )
             setattr(self, key, overwrite_value)
@@ -331,7 +342,7 @@ class MultiverseAnalysis:
         missing_universes = [multiverse_dict[u_id] for u_id in missing_universe_ids]
 
         if len(missing_universe_ids) > 0 or len(extra_universe_ids) > 0:
-            warnings.warn(
+            logger.warning(
                 f"Found missing {len(missing_universe_ids)} / "
                 f"additional {len(extra_universe_ids)} universe ids!"
             )
@@ -359,23 +370,37 @@ class MultiverseAnalysis:
             multiverse_grid = self.grid or self.generate_grid(save=False)
 
         # Run analysis for all universes
-        if n_jobs == 1:
-            logger.info("Running in single-threaded mode (njobs = 1).")
-            for universe_params in tqdm(multiverse_grid, desc="Visiting Universes"):
-                self.visit_universe(universe_params)
-        else:
-            logger.info(
-                f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
-            )
-            with tqdm_joblib(
-                tqdm(desc="Visiting Universes", total=len(multiverse_grid), smoothing=0)
-            ) as progress_bar:  # noqa: F841
-                # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
-                # Thus for n_jobs = -2, all CPUs but one are used
-                Parallel(n_jobs=n_jobs)(
-                    delayed(self.visit_universe)(universe_params)
-                    for universe_params in multiverse_grid
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            SpinnerColumn(),
+            TaskProgressColumn(),
+            BarColumn(bar_width=None),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            TextColumn("•"),
+            TimeRemainingColumn(),
+            expand=True,
+        ) as progress:
+            task_id = progress.add_task("Running", total=len(multiverse_grid))
+            if n_jobs == 1:
+                logger.info("Running in single-threaded mode (njobs = 1).")
+                for universe_params in multiverse_grid:
+                    self.visit_universe(universe_params)
+                    progress.update(task_id, advance=1)
+                    # Somehow automatic updating is not working in single threaded mode, so we manually refresh
+                    progress.refresh()
+            else:
+                logger.info(
+                    f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
                 )
+                with rich_joblib(progress, task_id):
+                    # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
+                    # Thus for n_jobs = -2, all CPUs but one are used
+                    Parallel(n_jobs=n_jobs)(
+                        delayed(self.visit_universe)(universe_params)
+                        for universe_params in multiverse_grid
+                    )
 
     def visit_universe(self, universe_dimensions: Dict[str, str]) -> None:
         """
@@ -398,7 +423,7 @@ class MultiverseAnalysis:
         # Clean up any old error fiels
         error_path = self._get_error_filepath(universe_id)
         if error_path.is_file():
-            warnings.warn(
+            logger.warning(
                 f"Removing old error file: {error_path}. This should only happen during a re-run."
             )
             error_path.unlink()
@@ -424,22 +449,29 @@ class MultiverseAnalysis:
         settings_str = json.dumps(settings, sort_keys=True)
 
         try:
-            if universe_filetype == ".ipynb":
-                self.execute_notebook_via_api(
-                    input_path=str(self.universe_file),
-                    output_path=str(output_path),
-                    parameters={
-                        "settings": settings_str,
-                    },
-                )
-            elif universe_filetype == ".py":
-                self.execute_python_script(
-                    input_path=str(self.universe_file),
-                    output_path=str(output_path),
-                    parameters=settings,
-                )
-            else:
-                raise ValueError("Universe file must be a .ipynb or .py file.")
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                if universe_filetype == ".ipynb":
+                    self.execute_notebook_via_api(
+                        input_path=str(self.universe_file),
+                        output_path=str(output_path),
+                        parameters={
+                            "settings": settings_str,
+                        },
+                    )
+                elif universe_filetype == ".py":
+                    self.execute_python_script(
+                        input_path=str(self.universe_file),
+                        output_path=str(output_path),
+                        parameters=settings,
+                    )
+                else:
+                    raise ValueError("Universe file must be a .ipynb or .py file.")
+
+                for warning in w:
+                    logger.warning(
+                        f"Warning in universe {universe_id}: {warning.message}"
+                    )
         except Exception as e:
             logger.error(f"Error in universe {universe_id} ({output_filename})")
             # Rename notebook file to indicate error

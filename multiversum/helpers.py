@@ -41,7 +41,10 @@ def add_universe_info_to_df(
     # Add info about dimensions
     dimensions_sorted = sorted(dimensions.keys())
     for dimension in dimensions_sorted:
-        data.insert(next(index), f"mv_dim_{dimension}", dimensions[dimension])
+        value = dimensions[dimension]
+        if isinstance(value, (list, dict)):
+            value = json.dumps(value, sort_keys=True)
+        data.insert(next(index), f"mv_dim_{dimension}", value)
     return data
 
 

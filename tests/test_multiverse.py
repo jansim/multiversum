@@ -625,3 +625,34 @@ class TestHelpers:
             "x": {"C"},
             "y": {"3"},
         }
+
+    def test_add_universe_info_to_df(self):
+        data = pd.DataFrame({"test_value": [42]})
+        universe_id = "test_universe"
+        run_no = 1
+        dimensions = {
+            "dim1": "val1",
+            "dim2": "val2",
+            "dim3": {"key3": "val3"},
+            "dim4": ["val4"],
+        }
+        execution_time = 123.456
+
+        result = add_universe_info_to_df(
+            data, universe_id, run_no, dimensions, execution_time
+        )
+
+        expected = pd.DataFrame(
+            {
+                "mv_universe_id": [universe_id],
+                "mv_run_no": [run_no],
+                "mv_execution_time": [execution_time],
+                "mv_dim_dim1": ["val1"],
+                "mv_dim_dim2": ["val2"],
+                "mv_dim_dim3": ['{"key3": "val3"}'],
+                "mv_dim_dim4": ['["val4"]'],
+                "test_value": [42],
+            }
+        )
+
+        pd.testing.assert_frame_equal(result, expected)

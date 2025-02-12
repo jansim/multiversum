@@ -83,7 +83,7 @@ def validate_dimensions(dimensions: Dict[str, Any]) -> tuple[tuple[str, ...], li
 
 
 def generate_minimal_multiverse_grid(
-    dimensions: Dict[str, Any]
+    dimensions: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     """
     Generate a minimal multiverse grid that contains each unique option at least once.

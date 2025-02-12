@@ -19,10 +19,10 @@ from joblib import Parallel, cpu_count, delayed
 from .helpers import (
     add_ids_to_multiverse_grid,
     add_universe_info_to_df,
+    generate_minimal_multiverse_grid,
     generate_multiverse_grid,
     generate_universe_id,
     search_files,
-    generate_minimal_multiverse_grid,
 )
 from .logger import logger
 

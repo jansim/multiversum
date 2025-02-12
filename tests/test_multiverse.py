@@ -490,6 +490,12 @@ class TestHelpers:
         assert keys == ("x", "y")
         assert values == ([1, 2], [3, 4])
 
+    def test_validate_dimensions_with_dict(self):
+        dimensions = {"x": [1, 2], "y": [{"a": 1, "b": 2}, {"a": 3, "b": 4}]}
+        keys, values = validate_dimensions(dimensions)
+        assert keys == tuple(dimensions.keys())
+        assert values == tuple(dimensions.values())
+
     def test_validate_dimensions_with_nested_lists(self):
         dimensions = {"x": [1, 2], "y": [[3, 4], [5, 6]]}
         keys, values = validate_dimensions(dimensions)

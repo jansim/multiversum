@@ -3,7 +3,7 @@ import json
 from hashlib import md5
 from itertools import count
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -45,7 +45,7 @@ def add_universe_info_to_df(
     return data
 
 
-def validate_dimensions(dimensions: Dict[str, Any]) -> tuple[tuple[str, ...], list]:
+def validate_dimensions(dimensions: Dict[str, Any]) -> Tuple[Tuple[str, ...], List]:
     """
     Validate the dimensions dictionary for multiverse grid generation.
 

@@ -17,7 +17,7 @@ from .multiverse import (
     "--mode",
     type=click.Choice(["full", "continue", "test"]),
     default="full",
-    help="How to run the multiverse analysis. (continue: continue from previous run, full: run all universes, test: run only a small subset of universes)",
+    help="How to run the multiverse analysis. (continue: continue from previous run, full: run all universes, test: run a minimal set of universes where each unique option appears at least once)",
 )
 @click.option(
     "--config",
@@ -92,11 +92,9 @@ def cli(
     # Run the analysis for the first universe
     if mode == "test":
         logger.info("Test Run")
-        multiverse_analysis.visit_universe(multiverse_grid[0])
-        if len(multiverse_grid) > 1:
-            multiverse_analysis.visit_universe(
-                multiverse_grid[len(multiverse_grid) - 1]
-            )
+        minimal_grid = multiverse_analysis.generate_minimal_grid()
+        logger.info(f"Generated minimal test grid with {len(minimal_grid)} universes")
+        multiverse_analysis.examine_multiverse(minimal_grid)
     elif mode == "continue":
         logger.info("Continuing Previous Run")
         missing_universes = multiverse_analysis.check_missing_universes()[

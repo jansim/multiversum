@@ -474,9 +474,10 @@ class MultiverseAnalysis:
                         f"Warning in universe {universe_id}: {warning.message}"
                     )
         except Exception as e:
-            logger.error(f"Error in universe {universe_id} ({output_filename})")
+            error_filename = ("E_" + output_filename)
+            logger.error(f"Error in universe {universe_id} ({error_filename})")
             # Rename notebook file to indicate error
-            error_output_path = output_dir / ("E_" + output_filename)
+            error_output_path = output_dir / error_filename
             output_path.rename(error_output_path)
             if self.stop_on_error:
                 raise e

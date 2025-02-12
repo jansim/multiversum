@@ -45,6 +45,43 @@ def add_universe_info_to_df(
     return data
 
 
+def validate_dimensions(dimensions: Dict[str, Any]) -> tuple[tuple[str, ...], list]:
+    """
+    Validate the dimensions dictionary for multiverse grid generation.
+
+    Args:
+        dimensions: A dictionary where keys are dimension names and values are lists
+            of possible values for each dimension.
+
+    Returns:
+        A tuple containing:
+            - A tuple of dimension names (keys)
+            - A list of processed dimension values with nested lists converted to tuples (values)
+
+    Raises:
+        ValueError: If dimensions are empty or contain invalid values.
+    """
+    if not dimensions:
+        raise ValueError("No (or empty) dimensions provided.")
+
+    keys, values = zip(*dimensions.items())
+    if not all(isinstance(k, str) for k in keys):
+        raise ValueError("All dimension names must be strings.")
+    if not all(isinstance(v, list) for v in values):
+        raise ValueError("All dimension values must be lists.")
+
+    # If we have lists of lists for dimensions (as is the case for sub-universes),
+    # we need to convert them to tuples to make them hashable
+    values_conv = [
+        [tuple(v) if isinstance(v, list) else v for v in dim] for dim in values
+    ]
+
+    if any(len(dim) != len(set(dim)) for dim in values_conv):
+        raise ValueError("Dimensions must not contain duplicate values.")
+
+    return keys, values_conv
+
+
 def generate_minimal_multiverse_grid(
     dimensions: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
@@ -62,25 +99,21 @@ def generate_minimal_multiverse_grid(
     Returns:
         A list of dicts containing the settings for different universes.
     """
+    keys, values_conv = validate_dimensions(dimensions)
+
     # Get the dimension with the most options
-    max_options = max(len(options) if isinstance(options, (list, tuple)) else 1
-                     for options in dimensions.values())
+    max_options = max(len(options) for options in values_conv)
 
     minimal_grid = []
     # Create one universe for each index up to the max number of options
     for i in range(max_options):
         universe = {}
-        for dim_name, options in dimensions.items():
-            if isinstance(options, (list, tuple)):
-                # Use modulo to cycle through options if dimension has fewer options
-                universe[dim_name] = options[i % len(options)]
-            else:
-                # For non-list options (e.g. single values), use as is
-                universe[dim_name] = options
+        for dim_name, options in zip(keys, values_conv):
+            # Use modulo to cycle through options
+            universe[dim_name] = options[i % len(options)]
         minimal_grid.append(universe)
 
     return minimal_grid
-
 
 
 def generate_multiverse_grid(
@@ -97,20 +130,7 @@ def generate_multiverse_grid(
     Returns:
         A list of dicts containing all different combinations of the options.
     """
-    if not dimensions:
-        raise ValueError("No (or empty) dimensions provided.")
-
-    keys, values = zip(*dimensions.items())
-    assert all(isinstance(k, str) for k in keys)
-    assert all(isinstance(v, list) for v in values)
-    # If we have lists of lists for dimensions (as is the case for sub-universes),
-    # we need to convert them to tuples to make them hashable
-    values_conv = [
-        [tuple(v) if isinstance(v, list) else v for v in dim] for dim in values
-    ]
-
-    if any(len(dim) != len(set(dim)) for dim in values_conv):
-        raise ValueError("Dimensions must not contain duplicate values.")
+    keys, values_conv = validate_dimensions(dimensions)
 
     # from https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     multiverse_grid = [dict(zip(keys, v)) for v in itertools.product(*values_conv)]

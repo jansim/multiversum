@@ -15,6 +15,48 @@ class TestUniverse:
         assert random.random() == 0.8444218515250481
         assert np.random.randint(10000) == 2732
 
+    def test_expand_dicts_false(self):
+        # Test when expand_dicts is False (default)
+        settings = {
+            "dimensions": {
+                "model": {"type": "random_forest", "n_estimators": 100},
+                "data": "full",
+            }
+        }
+        universe = Universe(settings, expand_dicts=False)
+        assert universe.dimensions == settings["dimensions"]
+
+    def test_expand_dicts_true(self):
+        # Test when expand_dicts is True
+        settings = {
+            "dimensions": {
+                "model": {"type": "random_forest", "n_estimators": 100},
+                "data": "full",
+            }
+        }
+        universe = Universe(settings, expand_dicts=True)
+        expected_dimensions = {
+            "type": "random_forest",
+            "n_estimators": 100,
+            "data": "full",
+        }
+        assert universe.dimensions == expected_dimensions
+
+    def test_expand_dicts_nested(self):
+        # Test with nested dictionaries
+        settings = {
+            "dimensions": {
+                "model": {"params": {"type": "random_forest", "n_estimators": 100}},
+                "data": "full",
+            }
+        }
+        universe = Universe(settings, expand_dicts=True)
+        expected_dimensions = {
+            "params": {"type": "random_forest", "n_estimators": 100},
+            "data": "full",
+        }
+        assert universe.dimensions == expected_dimensions
+
 
 class TestHelpers:
     def test_add_dict_to_df_empty_df_and_dict(self):

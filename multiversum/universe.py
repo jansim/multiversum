@@ -205,11 +205,18 @@ class Universe:
         )
         self.dimensions = parsed_settings["dimensions"]
         if expand_dicts:
-            # If there are any dictionaries in the dimensions, expand them into separate values
+            # Create a new dictionary to store expanded dimensions
+            expanded_dimensions = {}
+            # Process each key-value pair in dimensions
             for key, value in self.dimensions.items():
                 if isinstance(value, dict):
-                    self.dimensions.update(value)
-                    del self.dimensions[key]
+                    # For dictionary values, add all key-value pairs to root level
+                    # but don't expand nested dictionaries further
+                    expanded_dimensions.update(value)
+                else:
+                    # For non-dictionary values, keep them as is
+                    expanded_dimensions[key] = value
+            self.dimensions = expanded_dimensions
 
         self.seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
         self.output_dir = (

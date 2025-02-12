@@ -22,6 +22,7 @@ from .helpers import (
     generate_multiverse_grid,
     generate_universe_id,
     search_files,
+    generate_minimal_multiverse_grid,
 )
 from .logger import logger
 
@@ -574,3 +575,16 @@ class MultiverseAnalysis:
 
                     # Copy over script
                     output_file.write(input_file.read())
+
+    def generate_minimal_grid(self) -> List[Dict[str, Any]]:
+        """
+        Generate a minimal multiverse grid that contains each unique option at least once.
+
+        This creates a smaller grid compared to the full factorial design, where each unique
+        option in each dimension appears at least once. This can be useful for testing or
+        quick validation of all options.
+
+        Returns:
+            A list of dicts containing the settings for different universes.
+        """
+        return generate_minimal_multiverse_grid(self.dimensions)

@@ -45,6 +45,44 @@ def add_universe_info_to_df(
     return data
 
 
+def generate_minimal_multiverse_grid(
+    dimensions: Dict[str, Any]
+) -> List[Dict[str, Any]]:
+    """
+    Generate a minimal multiverse grid that contains each unique option at least once.
+
+    This creates a smaller grid compared to the full factorial design, where each unique
+    option in each dimension appears at least once. This can be useful for testing or
+    quick validation of all options.
+
+    Args:
+        dimensions: A dictionary where keys are dimension names and values are lists
+            of possible values for each dimension.
+
+    Returns:
+        A list of dicts containing the settings for different universes.
+    """
+    # Get the dimension with the most options
+    max_options = max(len(options) if isinstance(options, (list, tuple)) else 1
+                     for options in dimensions.values())
+
+    minimal_grid = []
+    # Create one universe for each index up to the max number of options
+    for i in range(max_options):
+        universe = {}
+        for dim_name, options in dimensions.items():
+            if isinstance(options, (list, tuple)):
+                # Use modulo to cycle through options if dimension has fewer options
+                universe[dim_name] = options[i % len(options)]
+            else:
+                # For non-list options (e.g. single values), use as is
+                universe[dim_name] = options
+        minimal_grid.append(universe)
+
+    return minimal_grid
+
+
+
 def generate_multiverse_grid(
     dimensions: Dict[str, List[str]],
     constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None,

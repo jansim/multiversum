@@ -15,6 +15,7 @@ from multiversum import (
 )
 from multiversum.helpers import (
     add_universe_info_to_df,
+    find_missing_values,
     generate_minimal_multiverse_grid,
     generate_multiverse_grid,
     generate_universe_id,
@@ -546,3 +547,75 @@ class TestHelpers:
             {"x": 1, "y": (3, 4)},
             {"x": 2, "y": (5, 6)},
         ]
+
+    def test_generate_minimal_multiverse_grid_with_constraints(self):
+        dimensions = {
+            "fizz": ["A", "B", "C"],
+            "buzz": ["always-allowed", "only-allowed-with-B", "allowed-except-for-C"],
+        }
+
+        constraints = {
+            "buzz": [
+                {
+                    "value": "only-allowed-with-B",
+                    "allowed_if": {"fizz": "B"},
+                },
+                {
+                    "value": "allowed-except-for-C",
+                    "forbidden_if": {"fizz": "C"},
+                },
+            ]
+        }
+
+        grid = generate_minimal_multiverse_grid(dimensions, constraints)
+
+        # Check that all valid values appear at least once
+        fizz_values = {universe["fizz"] for universe in grid}
+        buzz_values = {universe["buzz"] for universe in grid}
+        assert fizz_values == {"A", "B", "C"}
+        assert buzz_values == {
+            "always-allowed",
+            "only-allowed-with-B",
+            "allowed-except-for-C",
+        }
+
+        # Check that constraints are respected
+        for universe in grid:
+            if universe["buzz"] == "only-allowed-with-B":
+                assert universe["fizz"] == "B"
+            if universe["buzz"] == "allowed-except-for-C":
+                assert universe["fizz"] != "C"
+
+    def test_find_missing_values(self):
+        dimensions = {
+            "x": ["A", "B", "C"],
+            "y": ["1", "2", "3"],
+        }
+
+        # Create a grid missing some values
+        grid = [
+            {"x": "A", "y": "1"},
+            {"x": "B", "y": "2"},
+        ]
+
+        missing = find_missing_values(grid, dimensions)
+        assert missing == {
+            "x": {"C"},
+            "y": {"3"},
+        }
+
+        # Test with constraints
+        constraints = {
+            "y": [
+                {
+                    "value": "3",
+                    "forbidden_if": {"x": "C"},
+                },
+            ]
+        }
+
+        missing_with_constraints = find_missing_values(grid, dimensions, constraints)
+        assert missing_with_constraints == {
+            "x": {"C"},
+            "y": {"3"},
+        }

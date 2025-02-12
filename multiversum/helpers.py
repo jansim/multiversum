@@ -84,6 +84,7 @@ def validate_dimensions(dimensions: Dict[str, Any]) -> tuple[tuple[str, ...], li
 
 def generate_minimal_multiverse_grid(
     dimensions: Dict[str, Any],
+    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Generate a minimal multiverse grid that contains each unique option at least once.
@@ -95,6 +96,12 @@ def generate_minimal_multiverse_grid(
     Args:
         dimensions: A dictionary where keys are dimension names and values are lists
             of possible values for each dimension.
+        constraints: Optional dictionary where keys are dimension names and values are lists of constraints.
+            Each constraint is a dictionary with:
+                - value: The value of the dimension that the constraint applies to.
+                - allowed_if: A dictionary of dimension-value pairs that must be present for the constraint to be allowed.
+                - forbidden_if: A dictionary of dimension-value pairs that must not be present for the constraint to be allowed.
+            Only one of allowed_if and forbidden_if can be present in a constraint.
 
     Returns:
         A list of dicts containing the settings for different universes.
@@ -113,7 +120,65 @@ def generate_minimal_multiverse_grid(
             universe[dim_name] = options[i % len(options)]
         minimal_grid.append(universe)
 
+    if constraints:
+        # Apply constraints to filter out invalid combinations
+        minimal_grid = apply_constraints(minimal_grid, constraints)
+
+        # Check if we need to add more combinations to ensure all valid values are represented
+        missing_values = find_missing_values(minimal_grid, dimensions, constraints)
+
+        if missing_values:
+            # Generate additional combinations to include missing values
+            full_grid = generate_multiverse_grid(dimensions, constraints)
+
+            # Add combinations from full grid that contain missing values until all values are represented
+            for universe in full_grid:
+                if not any(universe == existing for existing in minimal_grid):
+                    for dim, values in missing_values.items():
+                        if universe[dim] in values:
+                            minimal_grid.append(universe)
+                            # Update missing values
+                            missing_values = find_missing_values(
+                                minimal_grid, dimensions, constraints
+                            )
+                            if not missing_values:
+                                break
+                    if not missing_values:
+                        break
+
     return minimal_grid
+
+
+def find_missing_values(
+    grid: List[Dict[str, Any]],
+    dimensions: Dict[str, Any],
+    constraints: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+) -> Dict[str, set]:
+    """
+    Find values from dimensions that are not represented in the grid but are valid according to constraints.
+
+    Args:
+        grid: List of dictionaries containing the current grid combinations
+        dimensions: Dictionary of dimension names and their possible values
+        constraints: Optional dictionary of constraints
+
+    Returns:
+        Dictionary mapping dimension names to sets of their missing valid values
+    """
+    missing_values = {}
+
+    # Generate full grid with constraints to know all valid combinations
+    full_grid = generate_multiverse_grid(dimensions, constraints)
+
+    # For each dimension, find values that appear in the full grid but not in the minimal grid
+    for dim_name, values in dimensions.items():
+        values_in_full = {universe[dim_name] for universe in full_grid}
+        values_in_minimal = {universe[dim_name] for universe in grid}
+        missing = values_in_full - values_in_minimal
+        if missing:
+            missing_values[dim_name] = missing
+
+    return missing_values
 
 
 def generate_multiverse_grid(

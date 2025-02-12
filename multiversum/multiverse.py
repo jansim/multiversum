@@ -587,4 +587,4 @@ class MultiverseAnalysis:
         Returns:
             A list of dicts containing the settings for different universes.
         """
-        return generate_minimal_multiverse_grid(self.dimensions)
+        return generate_minimal_multiverse_grid(self.dimensions, self.constraints)

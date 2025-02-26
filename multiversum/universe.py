@@ -150,6 +150,7 @@ class Universe:
         metrics: Optional[Dict[str, Callable]] = None,
         fairness_metrics: Optional[Dict[str, Callable]] = None,
         expand_dicts: bool = False,
+        seed: Optional[int] = None,
         set_seed: bool = True,
     ) -> None:
         """
@@ -176,6 +177,8 @@ class Universe:
             expand_dicts: Whether to expand dictionaries in the dimensions i.e.
                 if there are any dictionaries in the dimensions, expand them into
                 separate dimensions of their own. Defaults to False.
+            seed: An optional seed value to override the one from settings.
+                If provided, this value will be used instead of the one from settings.
             set_seed: Whether to use the seed provided in the settings.
                 Defaults to True. Please note, that this only sets the seed in
                 the Python random module and numpy.
@@ -218,7 +221,17 @@ class Universe:
                     expanded_dimensions[key] = value
             self.dimensions = expanded_dimensions
 
-        self.seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
+        # Handle seed overriding
+        settings_seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
+        if seed is not None:
+            if "seed" in parsed_settings:
+                warnings.warn(
+                    f"Seed provided in constructor ({seed}) is overriding seed from settings ({settings_seed})."
+                )
+            self.seed = seed
+        else:
+            self.seed = settings_seed
+
         self.output_dir = (
             Path(parsed_settings["output_dir"])
             if "output_dir" in parsed_settings

@@ -1,4 +1,5 @@
 import random
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,48 @@ class TestUniverse:
 
         assert random.random() == 0.8444218515250481
         assert np.random.randint(10000) == 2732
+
+    def test_seed_override(self):
+        # Test that seed parameter overrides settings seed
+        settings = {"dimensions": [], "seed": 123}
+
+        # First check the seed from settings
+        Universe(settings, set_seed=True)
+        random_val1 = random.random()
+        np_val1 = np.random.randint(10000)
+
+        # Reset seeds for next test
+        random.seed(0)
+        np.random.seed(0)
+
+        # Now check with seed override and capture warning
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered
+            warnings.simplefilter("always")
+
+            # Call the code that triggers the warning
+            Universe(settings, set_seed=True, seed=456)
+
+            # Verify warning was raised with correct message
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert (
+                "Seed provided in constructor (456) is overriding seed from settings (123)"
+                in str(w[0].message)
+            )
+
+        random_val2 = random.random()
+        np_val2 = np.random.randint(10000)
+
+        # Values should be different with different seeds
+        assert random_val1 != random_val2
+        assert np_val1 != np_val2
+
+        # Verify the overridden seed is consistent
+        random.seed(456)
+        np.random.seed(456)
+        assert random.random() == random_val2
+        assert np.random.randint(10000) == np_val2
 
     def test_expand_dicts_false(self):
         # Test when expand_dicts is False (default)

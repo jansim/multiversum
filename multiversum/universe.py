@@ -150,7 +150,7 @@ class Universe:
         metrics: Optional[Dict[str, Callable]] = None,
         fairness_metrics: Optional[Dict[str, Callable]] = None,
         expand_dicts: bool = False,
-        seed: Optional[int] = None,
+        seed: Optional[Union[int, str]] = None,
         set_seed: bool = True,
     ) -> None:
         """
@@ -178,7 +178,9 @@ class Universe:
                 if there are any dictionaries in the dimensions, expand them into
                 separate dimensions of their own. Defaults to False.
             seed: An optional seed value to override the one from settings.
-                If provided, this value will be used instead of the one from settings.
+                This can be either:
+                - an integer: directly used as seed value
+                - a string: interpreted as a dimension name whose value will be used as seed
             set_seed: Whether to use the seed provided in the settings.
                 Defaults to True. Please note, that this only sets the seed in
                 the Python random module and numpy.
@@ -223,12 +225,29 @@ class Universe:
 
         # Handle seed overriding
         settings_seed = parsed_settings["seed"] if "seed" in parsed_settings else 0
+
         if seed is not None:
-            if "seed" in parsed_settings:
-                warnings.warn(
-                    f"Seed provided in constructor ({seed}) is overriding seed from settings ({settings_seed})."
-                )
-            self.seed = seed
+            # If seed is a string, try to interpret it as a dimension name
+            if isinstance(seed, str):
+                if seed in self.dimensions:
+                    seed_value = self.dimensions[seed]
+                    if "seed" in parsed_settings:
+                        warnings.warn(
+                            f"Seed from dimension '{seed}' ({seed_value}) is overriding seed from settings ({settings_seed})."
+                        )
+                    self.seed = seed_value
+                else:
+                    warnings.warn(
+                        f"Dimension '{seed}' not found in dimensions. Using settings seed ({settings_seed}) instead."
+                    )
+                    self.seed = settings_seed
+            else:
+                # Seed is a direct value
+                if "seed" in parsed_settings:
+                    warnings.warn(
+                        f"Seed provided in constructor ({seed}) is overriding seed from settings ({settings_seed})."
+                    )
+                self.seed = seed
         else:
             self.seed = settings_seed
 

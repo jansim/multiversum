@@ -58,6 +58,67 @@ class TestUniverse:
         assert random.random() == random_val2
         assert np.random.randint(10000) == np_val2
 
+    def test_seed_dimension(self):
+        # Test using a dimension as seed
+        settings = {"dimensions": {"my_seed": 789, "other_dim": "value"}, "seed": 123}
+
+        # First check the seed from settings
+        Universe(settings, set_seed=True)
+        random_val1 = random.random()
+
+        # Reset seeds for next test
+        random.seed(0)
+        np.random.seed(0)
+
+        # Now check with seed from dimension
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            # Provide dimension name as seed
+            Universe(settings, set_seed=True, seed="my_seed")
+
+            # Verify warning was raised
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert (
+                "Seed from dimension 'my_seed' (789) is overriding seed from settings (123)"
+                in str(w[0].message)
+            )
+
+        random_val2 = random.random()
+
+        # Values should be different with different seeds
+        assert random_val1 != random_val2
+
+        # Verify the dimension seed is consistent
+        random.seed(789)
+        assert random.random() == random_val2
+
+    def test_seed_dimension_not_found(self):
+        # Test using a non-existent dimension as seed
+        settings = {"dimensions": {"existing_dim": "value"}, "seed": 123}
+
+        # Check with non-existent dimension name
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            # Provide non-existent dimension name as seed
+            Universe(settings, set_seed=True, seed="non_existent_dim")
+
+            # Verify warning was raised
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert "Dimension 'non_existent_dim' not found in dimensions" in str(
+                w[0].message
+            )
+
+        # Should use settings seed instead
+        random_val = random.random()
+
+        # Reset and verify we get the same value with settings seed
+        random.seed(123)
+        assert random.random() == random_val
+
     def test_expand_dicts_false(self):
         # Test when expand_dicts is False (default)
         settings = {

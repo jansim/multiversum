@@ -1,6 +1,8 @@
 site_name: "multiversum"
 theme:
   name: "material"
+  logo: "assets/multiversum_favicon_w.png"
+  favicon: "assets/multiversum_favicon.png"
   palette:
     primary: "blue"
     accent: "light blue"

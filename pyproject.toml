@@ -32,7 +32,7 @@ CI = "https://github.com/jansim/multiversum/actions"
 
 [project.optional-dependencies]
 test = ["pytest", "ruff"]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "mkdocs-click"]
 
 [tool.ruff]
 extend-exclude = ["tests/temp/"]

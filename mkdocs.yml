@@ -1,14 +1,21 @@
 site_name: "multiversum"
 theme:
   name: "material"
+  logo: "assets/multiversum_favicon_w.png"
+  favicon: "assets/multiversum_favicon.png"
   palette:
     primary: "blue"
     accent: "light blue"
+  features:
+    - content.code.copy
 
 repo_url: https://github.com/jansim/multiversum/
 
 markdown_extensions:
   - mkdocs-click
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
   - mkdocstrings:

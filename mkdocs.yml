@@ -4,11 +4,16 @@ theme:
   palette:
     primary: "blue"
     accent: "light blue"
+  features:
+    - content.code.copy
 
 repo_url: https://github.com/jansim/multiversum/
 
 markdown_extensions:
   - mkdocs-click
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
   - mkdocstrings:

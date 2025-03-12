@@ -51,6 +51,18 @@ from .multiverse import (
     default=None,
     help="Examine only a single universe with the given universe id (or starting with the provided id).",
 )
+@click.option(
+    "--grid-only",
+    is_flag=True,
+    default=False,
+    help="Only export the multiverse grid without running the analysis.",
+)
+@click.option(
+    "--grid-format",
+    type=click.Choice(["json", "csv", "none"]),
+    default="json",
+    help="Format of the exported multiverse grid (json, csv, or none to skip export).",
+)
 @click.pass_context
 def cli(
     ctx,
@@ -60,8 +72,13 @@ def cli(
     output_dir,
     seed,
     u_id,
+    grid_only,
+    grid_format,
 ):
     """Run a multiverse analysis from the command line."""
+    # Initialize rich console
+    console = Console()
+
     logger.debug(f"Parsed arguments: {ctx.params}")
 
     multiverse_analysis = MultiverseAnalysis(
@@ -72,7 +89,27 @@ def cli(
         seed=seed,
     )
 
-    multiverse_grid = multiverse_analysis.generate_grid(save=True)
+    # Generate the grid with the specified export format
+    multiverse_grid = multiverse_analysis.generate_grid(
+        save_format=grid_format,
+    )
+
+    # If export-only is specified, exit after exporting the grid
+    if grid_only:
+        if grid_format == "none":
+            logger.warning(
+                "Using --export-grid-only without specifying an export format. Nothing will happen."
+            )
+        else:
+            console.print(
+                Panel.fit(
+                    f"Exported [bold cyan]N = {len(multiverse_grid)}[/bold cyan]\n"
+                    f"Format: [bold green]{grid_format}[/bold green]",
+                    title="multiversum: Grid Export Only",
+                    border_style="green",
+                )
+            )
+        return
 
     # Set panel style based on mode
     MODE_DESCRIPTIONS = {
@@ -83,8 +120,6 @@ def cli(
 
     MODE_STYLES = {"full": "green", "continue": "yellow", "test": "magenta"}
 
-    # Initialize rich console
-    console = Console()
     console.print(
         Panel.fit(
             f"Generated [bold cyan]N = {len(multiverse_grid)}[/bold cyan] universes\n"

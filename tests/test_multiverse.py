@@ -332,12 +332,35 @@ class TestConfig:
         )
         mv = MultiverseAnalysis(config=config)
 
-        assert mv.generate_grid(save=False) == generate_multiverse_grid(
+        assert mv.generate_grid(save_format="none") == generate_multiverse_grid(
             {
                 "x": ["A", "B"],
                 "y": ["A", "B"],
             }
         )
+
+    def test_save_grid_format(self):
+        output_dir = get_temp_dir("test_save_grid_format")
+        mv = MultiverseAnalysis(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            output_dir=output_dir,
+        )
+
+        # Test saving as JSON
+        mv.generate_grid(save_format="json")
+        assert count_files(output_dir, "multiverse_grid.json") == 1
+
+        # Test saving as CSV
+        mv.generate_grid(save_format="csv")
+        assert count_files(output_dir, "multiverse_grid.csv") == 1
+
+        # Test not saving
+        mv.generate_grid(save_format="none")
+        # No additional files should be created
+        assert count_files(output_dir, "multiverse_grid.*") == 2
 
 
 class TestUniverse:

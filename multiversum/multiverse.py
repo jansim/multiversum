@@ -276,20 +276,31 @@ class MultiverseAnalysis:
 
         return run_no
 
-    def generate_grid(self, save: bool = True) -> List[Dict[str, Any]]:
+    def generate_grid(self, save_format: str = "json") -> List[Dict[str, Any]]:
         """
         Generate the multiverse grid from the stored dimensions.
 
         Args:
-            save: Whether to save the multiverse grid to a JSON file.
+            save_format: Format to save the multiverse grid in.
+                Options: "json", "csv", "none".
 
         Returns:
             A list of dicts containing the settings for different universes.
         """
         self.grid = generate_multiverse_grid(self.dimensions, self.constraints)
-        if save:
+
+        save_format = save_format.lower()
+        if save_format == "json":
             with open(self.output_dir / "multiverse_grid.json", "w") as fp:
                 json.dump(self.grid, fp, indent=2)
+        elif save_format == "csv":
+            grid_df = pd.DataFrame(self.grid)
+            grid_df.to_csv(self.output_dir / "multiverse_grid.csv", index=False)
+        elif save_format != "none":
+            logger.warning(
+                f"Unknown save_format: {save_format}. Multiverse grid not saved."
+            )
+
         return self.grid
 
     def aggregate_data(
@@ -332,7 +343,9 @@ class MultiverseAnalysis:
                 universe ids (i.e. not in the current multiverse_grid)
                 and the dictionaries for the missing universes.
         """
-        multiverse_dict = add_ids_to_multiverse_grid(self.generate_grid(save=False))
+        multiverse_dict = add_ids_to_multiverse_grid(
+            self.generate_grid(save_format="none")
+        )
         all_universe_ids = set(multiverse_dict.keys())
 
         aggregated_data = self.aggregate_data(include_errors=False, save=False)
@@ -368,7 +381,7 @@ class MultiverseAnalysis:
             None
         """
         if multiverse_grid is None:
-            multiverse_grid = self.grid or self.generate_grid(save=False)
+            multiverse_grid = self.grid or self.generate_grid(save_format="none")
 
         # Run analysis for all universes
         with Progress(

@@ -5,6 +5,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
+from .cli_helpers import create_summary_table
 from .helpers import calculate_cpu_count
 from .logger import logger
 from .multiverse import (
@@ -181,6 +182,13 @@ def cli(
         multiverse_analysis.aggregate_data(save=True)
 
     multiverse_analysis.check_missing_universes()
+
+    # Display a summary table of the analysis results
+    with console.status("[bold green]Generating summary...[/bold green]"):
+        agg_data = multiverse_analysis.aggregate_data(include_errors=True, save=False)
+        table = create_summary_table(agg_data)
+        if table:
+            console.print(table)
 
 
 if __name__ == "__main__":

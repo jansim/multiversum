@@ -1,15 +1,18 @@
+from typing import List, Optional, Tuple
+
+import pandas as pd
 from rich.table import Table
 
 
-def parse_partial_percentages(partial_str):
+def parse_partial_percentages(partial_str: str) -> Tuple[float, float]:
     """
     Parse a string representing a percentage range for splitting the multiverse.
 
     Args:
-        partial_str (str): A string in the format "start%,end%" or "start,end%", e.g. "0%,50%" or "0,20%"
+        partial_str: A string in the format "start%,end%" or "start,end%", e.g. "0%,50%" or "0,20%"
 
     Returns:
-        tuple: A tuple of two floats representing (start_percentage, end_percentage)
+        A tuple of two floats representing (start_percentage, end_percentage)
 
     Raises:
         ValueError: If the split string is not in the correct format
@@ -45,17 +48,19 @@ def parse_partial_percentages(partial_str):
     return start_pct, end_pct
 
 
-def split_multiverse_grid(multiverse_grid, start_pct, end_pct):
+def split_multiverse_grid(
+    multiverse_grid: List, start_pct: float, end_pct: float
+) -> Tuple[List, int, int]:
     """
     Split a grid based on percentage range.
 
     Args:
-        multiverse_grid (list): The grid to split
-        start_pct (float): Start percentage as a float (0-1)
-        end_pct (float): End percentage as a float (0-1)
+        multiverse_grid: The grid to split
+        start_pct: Start percentage as a float (0-1)
+        end_pct: End percentage as a float (0-1)
 
     Returns:
-        tuple: A tuple containing (split_grid, start_idx, end_idx)
+        A tuple containing (split_grid, start_idx, end_idx)
             - split_grid: The split portion of the grid
             - start_idx: Start index in the original grid
             - end_idx: End index in the original grid
@@ -65,15 +70,15 @@ def split_multiverse_grid(multiverse_grid, start_pct, end_pct):
     return multiverse_grid[start_idx:end_idx], start_idx, end_idx
 
 
-def create_summary_table(agg_data):
+def create_summary_table(agg_data: pd.DataFrame) -> Optional[Table]:
     """
     Create a rich table summarizing the multiverse analysis results.
 
     Args:
-        agg_data (pandas.DataFrame): Aggregated data from the multiverse analysis
+        agg_data: Aggregated data from the multiverse analysis
 
     Returns:
-        rich.table.Table: A formatted table with the analysis summary, or None if data is empty
+        A formatted table with the analysis summary, or None if data is empty
     """
     if agg_data.empty:
         return None

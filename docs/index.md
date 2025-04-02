@@ -132,6 +132,35 @@ Here's a simple example of how to use _multiversum_ to classify penguins 🐧.
 
 Another example using a machine learning workflow in `scikit-learn` can be found [here](../examples/scikit-learn--simple/).
 
+## Parallel Execution
+
+By default, _multiversum_ will run your analysis in parallel using all available CPU cores except one. This behaviour can be controlled using the `n_jobs` parameter:
+
+```bash
+# Use 4 CPU cores
+python -m multiversum --n-jobs=4
+
+# Use all CPU cores
+python -m multiversum --n-jobs=-1
+
+# Disable parallelization (sequential execution)
+python -m multiversum --n-jobs=1
+```
+
+### Distributed Execution across Multiple Machines
+
+For very large analyses that need to run across multiple machines or a compute cluster, you can use the `partial-parallel` mode with the `--partial` parameter:
+
+```bash
+# On machine 1: Run first 33% of universes
+python -m multiversum --mode=partial-parallel --partial="0%,50%"
+# On machine 2: Run second 33% of universes
+python -m multiversum --mode=partial-parallel --partial="50%,100%"
+
+# After all machines complete, finalize the analysis
+python -m multiversum --mode=finalize
+```
+
 ## Getting Started
 
 To quickly get started with running your own multiverse analysis, you can use the [multiversum starter template](https://github.com/jansim/multiversum-template) which contains everything necessary for you to set up your own multiverse analysis.

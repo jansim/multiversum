@@ -1,6 +1,70 @@
 from rich.table import Table
 
 
+def parse_partial_percentages(partial_str):
+    """
+    Parse a string representing a percentage range for splitting the multiverse.
+
+    Args:
+        partial_str (str): A string in the format "start%,end%" or "start,end%", e.g. "0%,50%" or "0,20%"
+
+    Returns:
+        tuple: A tuple of two floats representing (start_percentage, end_percentage)
+
+    Raises:
+        ValueError: If the split string is not in the correct format
+    """
+    parts = partial_str.split(",")
+    if len(parts) != 2:
+        raise ValueError("Split must be in the format 'start%,end%' or 'start,end%'.")
+
+    start_str, end_str = parts
+
+    if not end_str.strip().endswith("%"):
+        raise ValueError(
+            "Non-percentages for splitting are currently not supported, but may be in the future. Please add a '%' sign to the end of the second number."
+        )
+
+    # Clean and convert to floats
+    start_str = start_str.strip().rstrip("%")
+    end_str = end_str.strip().rstrip("%")
+
+    try:
+        start_pct = float(start_str) / 100
+        end_pct = float(end_str) / 100
+    except ValueError:
+        raise ValueError("Split percentages must be valid numbers")
+
+    # Validate ranges
+    if not (0 <= start_pct <= 1) or not (0 <= end_pct <= 1):
+        raise ValueError("Split percentages must be between 0% and 100%")
+
+    if start_pct >= end_pct:
+        raise ValueError("Start percentage must be less than end percentage")
+
+    return start_pct, end_pct
+
+
+def split_multiverse_grid(multiverse_grid, start_pct, end_pct):
+    """
+    Split a grid based on percentage range.
+
+    Args:
+        multiverse_grid (list): The grid to split
+        start_pct (float): Start percentage as a float (0-1)
+        end_pct (float): End percentage as a float (0-1)
+
+    Returns:
+        tuple: A tuple containing (split_grid, start_idx, end_idx)
+            - split_grid: The split portion of the grid
+            - start_idx: Start index in the original grid
+            - end_idx: End index in the original grid
+    """
+    start_idx = int(len(multiverse_grid) * start_pct)
+    end_idx = int(len(multiverse_grid) * end_pct)
+    return multiverse_grid[start_idx:end_idx], start_idx, end_idx
+
+
 def create_summary_table(agg_data):
     """
     Create a rich table summarizing the multiverse analysis results.

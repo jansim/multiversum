@@ -5,7 +5,11 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from .cli_helpers import create_summary_table
+from .cli_helpers import (
+    create_summary_table,
+    parse_partial_percentages,
+    split_multiverse_grid,
+)
 from .helpers import calculate_cpu_count
 from .logger import logger
 from .multiverse import (
@@ -72,6 +76,12 @@ from .multiverse import (
     default=-2,
     help="Number of CPUs to use for parallel processing. -1 uses all CPUs, -2 uses all but one CPU (default), and 1 disables parallel processing.",
 )
+@click.option(
+    "--partial",
+    type=str,
+    default=None,
+    help="Run only a specific percentage range of universes. Format: 'start%,end%' (e.g. '0%,50%' or '0,20%').",
+)
 @click.pass_context
 def cli(
     ctx,
@@ -84,6 +94,7 @@ def cli(
     grid_only,
     grid_format,
     n_jobs,
+    partial,
 ):
     """Run a multiverse analysis from the command line."""
     # Initialize rich console
@@ -146,6 +157,9 @@ def cli(
         )
     )
 
+    # Only u_id or split can be provided, not both
+    assert u_id is None or partial is None
+
     if u_id is not None:
         # Search for this particular universe
         multiverse_dict = add_ids_to_multiverse_grid(multiverse_grid)
@@ -159,6 +173,21 @@ def cli(
             f"[bold yellow]Running only universe:[/bold yellow] {matching_values[0]}"
         )
         multiverse_grid = [multiverse_dict[matching_values[0]]]
+
+    # Apply split if provided
+    if partial is not None:
+        try:
+            start_pct, end_pct = parse_partial_percentages(partial)
+            multiverse_grid, start_idx, end_idx = split_multiverse_grid(
+                multiverse_grid, start_pct, end_pct
+            )
+            console.print(
+                f"[bold yellow]Running only {end_pct - start_pct:.1%} of universes:[/bold yellow] "
+                f"from {start_pct:.1%} to {end_pct:.1%} (indices {start_idx} to {end_idx})"
+            )
+        except ValueError as e:
+            logger.error(f"Invalid split format: {e}")
+            ctx.exit(1)
 
     # Run the analysis for the first universe
     if mode == "test":

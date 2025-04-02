@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.panel import Panel
 
+from .helpers import calculate_cpu_count
 from .logger import logger
 from .multiverse import (
     DEFAULT_CONFIG_FILES,
@@ -63,6 +65,12 @@ from .multiverse import (
     default="json",
     help="Format of the exported multiverse grid (json, csv, or none to skip export).",
 )
+@click.option(
+    "--n-jobs",
+    type=int,
+    default=-2,
+    help="Number of CPUs to use for parallel processing. -1 uses all CPUs, -2 uses all but one CPU (default), and 1 disables parallel processing.",
+)
 @click.pass_context
 def cli(
     ctx,
@@ -74,6 +82,7 @@ def cli(
     u_id,
     grid_only,
     grid_format,
+    n_jobs,
 ):
     """Run a multiverse analysis from the command line."""
     # Initialize rich console
@@ -88,6 +97,10 @@ def cli(
         new_run=(mode != "continue"),
         seed=seed,
     )
+
+    # Calculate actual CPU count to use
+    actual_n_jobs = calculate_cpu_count(n_jobs)
+    total_cpus = os.cpu_count() or 1
 
     # Generate the grid with the specified export format
     multiverse_grid = multiverse_analysis.generate_grid(
@@ -125,7 +138,8 @@ def cli(
             f"Generated [bold cyan]N = {len(multiverse_grid)}[/bold cyan] universes\n"
             f"Mode: [bold {MODE_STYLES[mode]}]{MODE_DESCRIPTIONS[mode]}[/bold {MODE_STYLES[mode]}]\n"
             f"Run No.: [bold cyan]{multiverse_analysis.run_no}[/bold cyan]\n"
-            f"Seed: [bold cyan]{multiverse_analysis.seed}[/bold cyan]",
+            f"Seed: [bold cyan]{multiverse_analysis.seed}[/bold cyan]\n"
+            f"CPUs: [bold cyan]Using {actual_n_jobs}/{total_cpus} (n-jobs: {n_jobs})[/bold cyan]",
             title="multiversum: Multiverse Analysis",
             border_style=MODE_STYLES[mode],
         )
@@ -151,17 +165,17 @@ def cli(
         console.print(
             f"Generated minimal test grid with [bold cyan]{len(minimal_grid)}[/bold cyan] universes"
         )
-        multiverse_analysis.examine_multiverse(minimal_grid)
+        multiverse_analysis.examine_multiverse(minimal_grid, n_jobs=actual_n_jobs)
     elif mode == "continue":
         missing_universes = multiverse_analysis.check_missing_universes()[
             "missing_universes"
         ]
 
         # Run analysis only for missing universes
-        multiverse_analysis.examine_multiverse(missing_universes)
+        multiverse_analysis.examine_multiverse(missing_universes, n_jobs=actual_n_jobs)
     else:
         # Run analysis for all universes
-        multiverse_analysis.examine_multiverse(multiverse_grid)
+        multiverse_analysis.examine_multiverse(multiverse_grid, n_jobs=actual_n_jobs)
 
     with console.status("[bold green]Aggregating data...[/bold green]"):
         multiverse_analysis.aggregate_data(save=True)

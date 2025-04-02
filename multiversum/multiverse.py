@@ -19,6 +19,7 @@ from joblib import Parallel, cpu_count, delayed
 from .helpers import (
     add_ids_to_multiverse_grid,
     add_universe_info_to_df,
+    calculate_cpu_count,
     generate_minimal_multiverse_grid,
     generate_multiverse_grid,
     generate_universe_id,
@@ -376,12 +377,16 @@ class MultiverseAnalysis:
         Args:
             multiverse_grid: A list of dictionaries containing the settings for different universes.
             n_jobs: The number of jobs to run in parallel. Defaults to -2 (all CPUs but one).
+                Use -1 for all CPUs, positive integers for specific number of CPUs,
+                or 1 to disable parallel processing.
 
         Returns:
             None
         """
         if multiverse_grid is None:
             multiverse_grid = self.grid or self.generate_grid(save_format="none")
+
+        n_jobs = n_jobs if n_jobs > 0 else calculate_cpu_count(n_jobs)
 
         # Run analysis for all universes
         with Progress(
@@ -398,16 +403,14 @@ class MultiverseAnalysis:
         ) as progress:
             task_id = progress.add_task("Running", total=len(multiverse_grid))
             if n_jobs == 1:
-                logger.info("Running in single-threaded mode (njobs = 1).")
+                logger.info("Running in single-threaded mode.")
                 for universe_params in multiverse_grid:
                     self.visit_universe(universe_params)
                     progress.update(task_id, advance=1)
                     # Somehow automatic updating is not working in single threaded mode, so we manually refresh
                     progress.refresh()
             else:
-                logger.info(
-                    f"Running in parallel mode (njobs = {n_jobs}; {cpu_count()} CPUs detected)."
-                )
+                logger.info(f"Running in parallel mode (n_jobs = {n_jobs}).")
                 with rich_joblib(progress, task_id):
                     # For n_jobs below -1, (n_cpus + 1 + n_jobs) are used.
                     # Thus for n_jobs = -2, all CPUs but one are used
@@ -602,3 +605,12 @@ class MultiverseAnalysis:
             A list of dicts containing the settings for different universes.
         """
         return generate_minimal_multiverse_grid(self.dimensions, self.constraints)
+
+    def cpu_count(self) -> int:
+        """
+        Get the number of CPUs available.
+
+        Returns:
+            The number of CPUs available on the system.
+        """
+        return cpu_count()

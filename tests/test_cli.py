@@ -224,5 +224,73 @@ def test_cli_seed(runner, mock_multiverse_analysis):
     assert "Seed: 12345" in result.output or "Seed: 80539" in result.output
 
 
+def test_cli_partial_parallel_mode(runner, mock_multiverse_analysis):
+    """Test the partial-parallel mode with percentage ranges"""
+    # Mock the parse_partial_percentages and split_multiverse_grid functions
+    with mock.patch(
+        "multiversum.__main__.parse_partial_percentages"
+    ) as mock_parse, mock.patch(
+        "multiversum.__main__.split_multiverse_grid"
+    ) as mock_split:
+        # Set up mocks to return predictable values
+        mock_parse.return_value = (0.0, 0.5)  # 0% to 50%
+        partial_grid = [
+            {"dim1": "val1", "dim2": "val1"},
+            {"dim1": "val1", "dim2": "val2"},
+        ]
+        mock_split.return_value = (
+            partial_grid,
+            0,
+            2,
+        )  # Partial grid with start/end indices
+
+        # Invoke CLI with partial-parallel mode
+        result = runner.invoke(
+            cli, ["--mode", "partial-parallel", "--partial", "0%,50%"]
+        )
+        assert result.exit_code == 0
+
+        # Check that MultiverseAnalysis was initialized with new_run=False
+        mock_multiverse_analysis.assert_called_once()
+        args, kwargs = mock_multiverse_analysis.call_args
+        assert kwargs.get("new_run") is False
+
+        # Verify that parse_partial_percentages was called with the right string
+        mock_parse.assert_called_with("0%,50%")
+
+        # Verify that split_multiverse_grid was called with the right parameters
+        mock_split.assert_called_with(mock.ANY, 0.0, 0.5)
+
+        # Verify examine_multiverse was called with the partial grid
+        mock_multiverse_analysis.return_value.examine_multiverse.assert_called_with(
+            partial_grid, n_jobs=mock.ANY
+        )
+
+        # Verify the output contains the expected messages
+        assert "Parallel Run (Partial)" in result.output
+        assert "Finished running the partial analysis" in result.output
+
+
+def test_cli_finalize_mode(runner, mock_multiverse_analysis):
+    """Test the finalize mode"""
+    result = runner.invoke(cli, ["--mode", "finalize"])
+    assert result.exit_code == 0
+
+    # Check that MultiverseAnalysis was initialized with new_run=False
+    mock_multiverse_analysis.assert_called_once()
+    args, kwargs = mock_multiverse_analysis.call_args
+    assert kwargs.get("new_run") is False
+
+    # Verify that generate_grid was called but examine_multiverse was NOT called
+    mock_multiverse_analysis.return_value.generate_grid.assert_called_once()
+    mock_multiverse_analysis.return_value.examine_multiverse.assert_not_called()
+
+    # Verify that check_missing_universes was called to verify completion
+    mock_multiverse_analysis.return_value.check_missing_universes.assert_called_once()
+
+    # Verify that aggregate_data was called
+    mock_multiverse_analysis.return_value.aggregate_data.assert_called()
+
+
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])

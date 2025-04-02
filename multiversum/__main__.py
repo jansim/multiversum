@@ -5,7 +5,11 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from .cli_helpers import create_summary_table
+from .cli_helpers import (
+    create_summary_table,
+    parse_partial_percentages,
+    split_multiverse_grid,
+)
 from .helpers import calculate_cpu_count
 from .logger import logger
 from .multiverse import (
@@ -20,9 +24,16 @@ from .multiverse import (
 @click.command()
 @click.option(
     "--mode",
-    type=click.Choice(["full", "continue", "test"]),
+    type=click.Choice(["full", "continue", "test", "partial-parallel", "finalize"]),
     default="full",
-    help="How to run the multiverse analysis. (continue: continue from previous run, full: run all universes, test: run a minimal set of universes where each unique option appears at least once)",
+    help=(
+        "How to run the multiverse analysis."
+        "(continue: continue from previous run, "
+        "full: run all universes, "
+        "test: run a minimal set of universes where each unique option appears at least once, "
+        "partial-parallel: run a partial range of universes in parallel see --partial"
+        "finalize: finalize the previous run e.g. after running in partial-parallel mode)"
+    ),
 )
 @click.option(
     "--config",
@@ -72,6 +83,12 @@ from .multiverse import (
     default=-2,
     help="Number of CPUs to use for parallel processing. -1 uses all CPUs, -2 uses all but one CPU (default), and 1 disables parallel processing.",
 )
+@click.option(
+    "--partial",
+    type=str,
+    default=None,
+    help="Run only a specific percentage range of universes. Format: 'start%,end%' (e.g. '0%,50%' or '0,20%'). Set mode to 'partial-parallel' to run in parallel and avoid race conditions.",
+)
 @click.pass_context
 def cli(
     ctx,
@@ -84,6 +101,7 @@ def cli(
     grid_only,
     grid_format,
     n_jobs,
+    partial,
 ):
     """Run a multiverse analysis from the command line."""
     # Initialize rich console
@@ -95,7 +113,7 @@ def cli(
         config=config,
         universe=universe,
         output_dir=Path(output_dir),
-        new_run=(mode != "continue"),
+        new_run=(mode not in ["continue", "partial-parallel", "finalize"]),
         seed=seed,
     )
 
@@ -125,70 +143,123 @@ def cli(
             )
         return
 
-    # Set panel style based on mode
-    MODE_DESCRIPTIONS = {
-        "full": "Full Run",
-        "continue": "Continuing Previous Run",
-        "test": "Test Run",
-    }
+    if mode != "finalize":
+        # Set panel style based on mode
+        MODE_DESCRIPTIONS = {
+            "full": "Full Run",
+            "continue": "Continuing Previous Run",
+            "test": "Test Run",
+            "partial-parallel": "Parallel Run (Partial)",
+        }
 
-    MODE_STYLES = {"full": "green", "continue": "yellow", "test": "magenta"}
+        MODE_STYLES = {
+            "full": "green",
+            "continue": "yellow",
+            "test": "magenta",
+            "partial-parallel": "blue",
+        }
 
-    console.print(
-        Panel.fit(
-            f"Generated [bold cyan]N = {len(multiverse_grid)}[/bold cyan] universes\n"
-            f"Mode: [bold {MODE_STYLES[mode]}]{MODE_DESCRIPTIONS[mode]}[/bold {MODE_STYLES[mode]}]\n"
-            f"Run No.: [bold cyan]{multiverse_analysis.run_no}[/bold cyan]\n"
-            f"Seed: [bold cyan]{multiverse_analysis.seed}[/bold cyan]\n"
-            f"CPUs: [bold cyan]Using {actual_n_jobs}/{total_cpus} (n-jobs: {n_jobs})[/bold cyan]",
-            title="multiversum: Multiverse Analysis",
-            border_style=MODE_STYLES[mode],
-        )
-    )
-
-    if u_id is not None:
-        # Search for this particular universe
-        multiverse_dict = add_ids_to_multiverse_grid(multiverse_grid)
-        matching_values = [
-            key for key in multiverse_dict.keys() if key.startswith(u_id)
-        ]
-        assert len(matching_values) == 1, (
-            f"The id {u_id} matches {len(matching_values)} universe ids."
-        )
         console.print(
-            f"[bold yellow]Running only universe:[/bold yellow] {matching_values[0]}"
+            Panel.fit(
+                f"Generated [bold cyan]N = {len(multiverse_grid)}[/bold cyan] universes\n"
+                f"Mode: [bold {MODE_STYLES[mode]}]{MODE_DESCRIPTIONS[mode]}[/bold {MODE_STYLES[mode]}]\n"
+                f"Run No.: [bold cyan]{multiverse_analysis.run_no}[/bold cyan]\n"
+                f"Seed: [bold cyan]{multiverse_analysis.seed}[/bold cyan]\n"
+                f"CPUs: [bold cyan]Using {actual_n_jobs}/{total_cpus} (n-jobs: {n_jobs})[/bold cyan]",
+                title="multiversum: Multiverse Analysis",
+                border_style=MODE_STYLES[mode],
+            )
         )
-        multiverse_grid = [multiverse_dict[matching_values[0]]]
 
-    # Run the analysis for the first universe
-    if mode == "test":
-        minimal_grid = multiverse_analysis.generate_minimal_grid()
-        console.print(
-            f"Generated minimal test grid with [bold cyan]{len(minimal_grid)}[/bold cyan] universes"
-        )
-        multiverse_analysis.examine_multiverse(minimal_grid, n_jobs=actual_n_jobs)
-    elif mode == "continue":
-        missing_universes = multiverse_analysis.check_missing_universes()[
-            "missing_universes"
-        ]
+        # Only u_id or split can be provided, not both
+        assert u_id is None or partial is None
 
-        # Run analysis only for missing universes
-        multiverse_analysis.examine_multiverse(missing_universes, n_jobs=actual_n_jobs)
-    else:
-        # Run analysis for all universes
-        multiverse_analysis.examine_multiverse(multiverse_grid, n_jobs=actual_n_jobs)
+        if u_id is not None:
+            # Search for this particular universe
+            multiverse_dict = add_ids_to_multiverse_grid(multiverse_grid)
+            matching_values = [
+                key for key in multiverse_dict.keys() if key.startswith(u_id)
+            ]
+            assert len(matching_values) == 1, (
+                f"The id {u_id} matches {len(matching_values)} universe ids."
+            )
+            console.print(
+                f"[bold yellow]Running only universe:[/bold yellow] {matching_values[0]}"
+            )
+            multiverse_grid = [multiverse_dict[matching_values[0]]]
 
-    with console.status("[bold green]Aggregating data...[/bold green]"):
-        multiverse_analysis.aggregate_data(save=True)
+        # Apply split if provided
+        if partial is not None:
+            try:
+                start_pct, end_pct = parse_partial_percentages(partial)
+                multiverse_grid, start_idx, end_idx = split_multiverse_grid(
+                    multiverse_grid, start_pct, end_pct
+                )
+                console.print(
+                    f"[bold yellow]Running only {end_pct - start_pct:.1%} of universes:[/bold yellow] "
+                    f"from {start_pct:.1%} to {end_pct:.1%} (indices {start_idx} to {end_idx})"
+                )
+                if mode != "partial-parallel":
+                    console.print(
+                        "Detected a partial run. If you want to run multiple partial multiversum analyses in parallel, "
+                        "you may want to use mode='partial-parallel' to avoid race conditions."
+                    )
+            except ValueError as e:
+                logger.error(f"Invalid split format: {e}")
+                ctx.exit(1)
+
+        if mode == "partial-parallel":
+            if partial is None:
+                logger.error(
+                    "You must provide a partial range when using mode='partial-parallel'."
+                )
+                ctx.exit(1)
+            console.print(
+                "Running in manual parallel mode with partial ranges. Will not create a new run, "
+                "but rather reuse the previous one to avoid starting multiple."
+            )
+
+            multiverse_analysis.examine_multiverse(
+                multiverse_grid, n_jobs=actual_n_jobs
+            )
+
+            console.print(
+                "Finished running the partial analysis. "
+                "Use mode=finalize to finalize the run when all partial analyses are finished."
+            )
+        # Run the analysis for the first universe
+        elif mode == "test":
+            minimal_grid = multiverse_analysis.generate_minimal_grid()
+            console.print(
+                f"Generated minimal test grid with [bold cyan]{len(minimal_grid)}[/bold cyan] universes"
+            )
+            multiverse_analysis.examine_multiverse(minimal_grid, n_jobs=actual_n_jobs)
+        elif mode == "continue":
+            missing_universes = multiverse_analysis.check_missing_universes()[
+                "missing_universes"
+            ]
+
+            # Run analysis only for missing universes
+            multiverse_analysis.examine_multiverse(
+                missing_universes, n_jobs=actual_n_jobs
+            )
+        else:
+            # Run analysis for all universes
+            multiverse_analysis.examine_multiverse(
+                multiverse_grid, n_jobs=actual_n_jobs
+            )
 
     multiverse_analysis.check_missing_universes()
 
+    # Aggregate data
+    agg_data = None
+    with console.status("[bold green]Aggregating data...[/bold green]"):
+        agg_data = multiverse_analysis.aggregate_data(save=True)
+
     # Display a summary table of the analysis results
-    with console.status("[bold green]Generating summary...[/bold green]"):
-        agg_data = multiverse_analysis.aggregate_data(include_errors=True, save=False)
-        table = create_summary_table(agg_data)
-        if table:
-            console.print(table)
+    table = create_summary_table(agg_data)
+    if table:
+        console.print(table)
 
 
 if __name__ == "__main__":

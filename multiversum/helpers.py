@@ -1,5 +1,6 @@
 import itertools
 import json
+import os
 from hashlib import md5
 from itertools import count
 from pathlib import Path
@@ -309,3 +310,32 @@ def search_files(file: Any, default_files: List[str]) -> Optional[Path]:
                 return default_file_path
 
     return None
+
+
+def calculate_cpu_count(n_jobs: int) -> int:
+    """
+    Calculate the actual number of CPUs to use based on the n_jobs parameter.
+
+    Args:
+        n_jobs: Number of jobs specified by the user.
+               -1 means use all available CPUs.
+               -2 means use all but one CPU.
+               Positive values are used as is.
+
+    Returns:
+        The actual number of CPUs to use.
+    """
+    assert n_jobs != 0, "n_jobs cannot be 0."
+
+    cpu_count = os.cpu_count() or 1  # Default to 1 if cpu_count returns None
+
+    if n_jobs < 0:
+        # For negative values, use cpu_count + n_jobs (e.g., -1 → all CPUs, -2 → all but one)
+        return max(1, cpu_count + n_jobs + 1)
+    else:
+        if n_jobs > cpu_count:
+            logger.warning(
+                f"Requested {n_jobs} jobs, but only {cpu_count} CPUs detected."
+            )
+            return cpu_count
+        return n_jobs

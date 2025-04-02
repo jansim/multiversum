@@ -24,7 +24,10 @@ def create_summary_table(agg_data):
     # Total universes
     total_universes = len(agg_data)
     table.add_row("Length of Agg. Data", str(total_universes))
-    table.add_row("Universes in Agg. Data", str(agg_data["mv_universe_id"].nunique()))
+    if "mv_universe_id" in agg_data.columns:
+        table.add_row(
+            "Universes in Agg. Data", str(agg_data["mv_universe_id"].nunique())
+        )
 
     # Success rate
     table.add_section()

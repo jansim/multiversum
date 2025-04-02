@@ -67,3 +67,15 @@ class TestCreateSummaryTable:
 
         # Verify table exists with correct structure
         assert isinstance(table, Table)
+
+    def test_missing_universe_id_column(self):
+        """Test behavior when the aggregate data is missing the required mv_universe_id column."""
+        # Create a dataframe with data but no mv_universe_id column
+        agg_data = pd.DataFrame(
+            {"some_column": [1, 2, 3], "another_column": ["a", "b", "c"]}
+        )
+
+        table = create_summary_table(agg_data)
+
+        # Verify table exists with correct structure
+        assert isinstance(table, Table)

@@ -64,4 +64,4 @@ Ruff is used for formatting and linting. Formatting can be automatically checked
 
 ### Docs
 
-The documentation is generated using mkdocs and can be locally run using `mkdocs serve` after installing its dependencies using `python -m pip install -e '.[docs]`.
+The documentation is generated using mkdocs and can be locally run using `mkdocs serve` after installing its dependencies using `python -m pip install -e '.[docs]'`.

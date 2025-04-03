@@ -538,7 +538,7 @@ class MultiverseAnalysis:
 
     def execute_notebook_via_api(
         self, input_path: str, output_path: str, parameters: Dict[str, str]
-    ):
+    ) -> None:
         """
         Executes a notebook via the papermill python API.
 

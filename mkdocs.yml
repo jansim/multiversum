@@ -8,6 +8,7 @@ theme:
     accent: "light blue"
   features:
     - content.code.copy
+    - navigation.expand
 
 repo_url: https://github.com/jansim/multiversum/
 

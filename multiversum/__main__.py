@@ -89,6 +89,18 @@ from .multiverse import (
     default=None,
     help="Run only a specific percentage range of universes. Format: 'start%,end%' (e.g. '0%,50%' or '0,20%'). Set mode to 'partial-parallel' to run in parallel and avoid race conditions.",
 )
+@click.option(
+    "--retry-errors",
+    is_flag=True,
+    default=False,
+    help="When mode=continue, retry universes that previously resulted in errors.",
+)
+@click.option(
+    "--retry-error-type",
+    type=str,
+    default=None,
+    help="When mode=continue, retry only universes that failed with this specific error type.",
+)
 @click.pass_context
 def cli(
     ctx,
@@ -102,12 +114,21 @@ def cli(
     grid_format,
     n_jobs,
     partial,
+    retry_errors,
+    retry_error_type,
 ):
     """Run a multiverse analysis from the command line."""
     # Initialize rich console
     console = Console()
 
     logger.debug(f"Parsed arguments: {ctx.params}")
+
+    # Check retry flags are only used with continue mode
+    if (retry_errors or retry_error_type) and mode != "continue":
+        logger.warning(
+            f"The --retry-errors and --retry-error-type flags are only used with --mode continue, "
+            f"but mode is set to '{mode}'. These flags will be ignored."
+        )
 
     multiverse_analysis = MultiverseAnalysis(
         config=config,
@@ -235,11 +256,33 @@ def cli(
             )
             multiverse_analysis.examine_multiverse(minimal_grid, n_jobs=actual_n_jobs)
         elif mode == "continue":
-            missing_universes = multiverse_analysis.check_missing_universes()[
-                "missing_universes"
-            ]
+            missing_info = multiverse_analysis.check_missing_universes()
+            missing_universes = missing_info["missing_universes"]
 
-            # Run analysis only for missing universes
+            if retry_error_type is not None:
+                if retry_errors:
+                    logger.warning(
+                        "Both --retry-errors and --retry-error-type provided. "
+                        "Only --retry-error-type will be used."
+                    )
+                if retry_error_type in missing_info["error_universes_by_type"]:
+                    error_universes = missing_info["error_universes_by_type"][
+                        retry_error_type
+                    ]
+                    missing_universes.extend(error_universes)
+                    console.print(
+                        f"[bold yellow]Found {len(error_universes)} universes "
+                        f"that failed with error type '{retry_error_type}'[/bold yellow]"
+                    )
+                else:
+                    logger.warning(
+                        f"No universes found with error type '{retry_error_type}'"
+                    )
+            elif retry_errors:
+                # Add all errored universes to the list of universes to run
+                missing_universes.extend(missing_info["error_universes"])
+
+            # Run analysis only for missing/errored universes
             multiverse_analysis.examine_multiverse(
                 missing_universes, n_jobs=actual_n_jobs
             )

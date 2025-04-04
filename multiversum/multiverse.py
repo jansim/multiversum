@@ -52,6 +52,9 @@ DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
 DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
 DEFAULT_STOP_ON_ERROR = True
 
+ERROR_TYPE_COLUMN = "mv_error_type"
+ERROR_MESSAGE_COLUMN = "mv_error"
+
 
 @dataclass
 class Config:
@@ -91,9 +94,24 @@ class Config:
 
 
 class MissingUniverseInfo(TypedDict):
+    """
+    Information about missing or errored universes in a multiverse analysis.
+
+    Attributes:
+        missing_universe_ids: List of IDs of universes not yet run
+        extra_universe_ids: List of IDs found in data but not in multiverse grid
+        error_universe_ids: List of IDs of universes that errored out
+        missing_universes: List of dictionaries containing the settings for missing universes
+        error_universes: List of dictionaries containing the settings for errored universes
+        error_universes_by_type: Dictionary mapping error types to lists of errored universe settings
+    """
+
     missing_universe_ids: List[str]
     extra_universe_ids: List[str]
+    error_universe_ids: List[str]
     missing_universes: List[Dict[str, str]]
+    error_universes: List[Dict[str, str]]
+    error_universes_by_type: Dict[str, List[Dict[str, str]]]
 
 
 class MultiverseAnalysis:
@@ -330,6 +348,12 @@ class MultiverseAnalysis:
         else:
             df = pd.concat((pd.read_csv(f) for f in csv_files), ignore_index=True)
 
+        if include_errors:
+            # Ensure error columns exist even if there are no errors
+            for col in [ERROR_TYPE_COLUMN, ERROR_MESSAGE_COLUMN]:
+                if col not in df.columns:
+                    df[col] = pd.Series(dtype="string")
+
         if save:
             df.to_csv(data_dir / ("agg_" + str(self.run_no) + "_run_outputs.csv.gz"))
 
@@ -340,32 +364,68 @@ class MultiverseAnalysis:
         Check if any universes from the multiverse have not yet been visited.
 
         Returns:
-            A dictionary containing the missing universe ids, additional
-                universe ids (i.e. not in the current multiverse_grid)
-                and the dictionaries for the missing universes.
+            A dictionary containing:
+                - missing_universe_ids: IDs of universes not yet run
+                - extra_universe_ids: IDs found in data but not in multiverse grid
+                - error_universe_ids: IDs of universes that errored out
+                - missing_universes: Dictionaries for the missing universes
+                - error_universes: Dictionaries for the errored universes
+                - error_universes_by_type: Dictionary mapping error types to lists of errored universes
         """
         multiverse_dict = add_ids_to_multiverse_grid(
             self.generate_grid(save_format="none")
         )
         all_universe_ids = set(multiverse_dict.keys())
 
-        aggregated_data = self.aggregate_data(include_errors=False, save=False)
-        universe_ids_with_data = set(aggregated_data["mv_universe_id"])
+        # Get all runs including errors
+        all_data = self.aggregate_data(include_errors=True, save=False)
 
-        missing_universe_ids = all_universe_ids - universe_ids_with_data
+        # Split into successful and error runs
+        error_data = all_data[all_data["mv_error_type"].notna()]
+        success_data = all_data[all_data["mv_error_type"].isna()]
+
+        # Determine universe IDs
+        universe_ids_with_data = set(success_data["mv_universe_id"])
+        error_universe_ids = set(error_data["mv_universe_id"])
+        missing_universe_ids = all_universe_ids - (
+            universe_ids_with_data | error_universe_ids
+        )
         extra_universe_ids = universe_ids_with_data - all_universe_ids
-        missing_universes = [multiverse_dict[u_id] for u_id in missing_universe_ids]
 
-        if len(missing_universe_ids) > 0 or len(extra_universe_ids) > 0:
+        # Get universe dicts
+        missing_universes = [multiverse_dict[u_id] for u_id in missing_universe_ids]
+        error_universes = [
+            multiverse_dict[u_id]
+            for u_id in error_universe_ids
+            if u_id in multiverse_dict
+        ]
+        error_universes_by_type = {}
+        for error_type in error_data["mv_error_type"].unique():
+            type_ids = set(
+                error_data[error_data["mv_error_type"] == error_type]["mv_universe_id"]
+            )
+            error_universes_by_type[error_type] = [
+                multiverse_dict[u_id] for u_id in type_ids if u_id in multiverse_dict
+            ]
+
+        if (
+            len(missing_universe_ids) > 0
+            or len(extra_universe_ids) > 0
+            or len(error_universe_ids) > 0
+        ):
             logger.warning(
-                f"Found missing {len(missing_universe_ids)} / "
-                f"additional {len(extra_universe_ids)} universe ids!"
+                f"Found {len(missing_universe_ids)} missing / "
+                f"{len(error_universe_ids)} errored / "
+                f"{len(extra_universe_ids)} additional universe ids!"
             )
 
         return {
-            "missing_universe_ids": missing_universe_ids,
-            "extra_universe_ids": extra_universe_ids,
+            "missing_universe_ids": list(missing_universe_ids),
+            "extra_universe_ids": list(extra_universe_ids),
+            "error_universe_ids": list(error_universe_ids),
             "missing_universes": missing_universes,
+            "error_universes": error_universes,
+            "error_universes_by_type": error_universes_by_type,
         }
 
     def examine_multiverse(

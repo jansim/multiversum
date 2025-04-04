@@ -227,8 +227,8 @@ class TestMultiverseAnalysis:
         # Check whether missing universes remain
         with caplog.at_level(logging.WARNING):
             missing_info = mv.check_missing_universes()
-        assert "Found missing" in caplog.text
-        assert len(missing_info["missing_universe_ids"]) == 2
+        assert "Found 0 missing / 2 errored / 0 additional" in caplog.text
+        assert len(missing_info["missing_universe_ids"]) == 0
         assert len(missing_info["extra_universe_ids"]) == 0
 
         # Check whether errors correctly show up in final data
@@ -263,7 +263,7 @@ class TestMultiverseAnalysis:
         # Check whether missing universes remain
         with caplog.at_level(logging.WARNING):
             missing_info = mv.check_missing_universes()
-        assert "Found missing" in caplog.text
+        assert "Found 2 missing / 0 errored / 0 additional" in caplog.text
         assert len(missing_info["missing_universe_ids"]) == 2
         assert len(missing_info["extra_universe_ids"]) == 0
 
@@ -320,6 +320,127 @@ class TestMultiverseAnalysis:
         )
         mv.visit_universe({"x": "A", "y": "B"})
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 1
+
+    def test_check_missing_universes_with_errors(self):
+        output_dir = get_temp_dir(
+            "test_MultiverseAnalysis_check_missing_universes_with_errors"
+        )
+        mv = MultiverseAnalysis(
+            dimensions={
+                "x": ["A", "B", "C"],
+                "y": ["A", "B"],
+            },
+            universe=TEST_DIR / "scenarios" / "universe_error.ipynb",
+            output_dir=output_dir,
+            stop_on_error=False,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        missing_info = mv.check_missing_universes()
+
+        # Test error universe IDs and objects
+        assert len(missing_info["error_universe_ids"]) > 0
+        assert len(missing_info["error_universes"]) > 0
+
+        # Test error universes by type
+        error_types = missing_info["error_universes_by_type"]
+        assert "ValueError" in error_types
+        assert len(error_types["ValueError"]) > 0
+
+        # Verify each error universe has correct structure
+        for error_universe in missing_info["error_universes"]:
+            assert "x" in error_universe
+            assert "y" in error_universe
+
+    def test_check_missing_universes_without_errors(self):
+        output_dir = get_temp_dir(
+            "test_MultiverseAnalysis_check_missing_universes_without_errors"
+        )
+        mv = MultiverseAnalysis(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            output_dir=output_dir,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        missing_info = mv.check_missing_universes()
+
+        # Verify no errors were found
+        assert len(missing_info["error_universe_ids"]) == 0
+        assert len(missing_info["error_universes"]) == 0
+        assert len(missing_info["error_universes_by_type"]) == 0
+
+        # Verify other fields are also empty (successful run)
+        assert len(missing_info["missing_universe_ids"]) == 0
+        assert len(missing_info["extra_universe_ids"]) == 0
+
+    def test_check_missing_universes_multiple_error_types(self):
+        output_dir = get_temp_dir(
+            "test_MultiverseAnalysis_check_missing_universes_multiple_error_types"
+        )
+        mv = MultiverseAnalysis(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A"],
+            },
+            universe=TEST_DIR / "scenarios" / "universe_slow.ipynb",
+            output_dir=output_dir,
+            cell_timeout=1,
+            stop_on_error=False,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        # Add a different type of error manually and re-run check
+        # Note: This is a bit of an odd way of interfering with error handling,
+        # so could more easily lead to tests failing in the future
+        dims = mv.generate_minimal_grid()[0]
+        u_id = generate_universe_id(dims)
+        mv.save_error(u_id, dims, ValueError("Test error"))
+
+        # Ensure error file is loaded by running check again
+        missing_info = mv.check_missing_universes()
+
+        print("TESTOUTPUT123")
+        print(missing_info["error_universes_by_type"])
+
+        # Should have both timeout and value errors
+        error_types = missing_info["error_universes_by_type"]
+        assert "CellTimeoutError" in error_types
+        assert "ValueError" in error_types
+        # Both original universes timeout, but we've overwritten one of them
+        assert len(error_types["CellTimeoutError"]) == 1
+        assert len(error_types["ValueError"]) == 1
+
+        # Total errors should match sum of individual error types
+        total_errors = sum(len(errors) for errors in error_types.values())
+        assert len(missing_info["error_universes"]) == total_errors
+
+    def test_aggregate_data_error_columns(self):
+        output_dir = get_temp_dir("test_aggregate_data_error_columns")
+        mv = MultiverseAnalysis(
+            dimensions={
+                "x": ["A", "B"],
+                "y": ["A", "B"],
+            },
+            universe=TEST_DIR / "scenarios" / "universe_simple.ipynb",
+            output_dir=output_dir,
+        )
+        mv.examine_multiverse(n_jobs=1)
+
+        # Test with include_errors=True (should have error columns)
+        data_with_errors = mv.aggregate_data(include_errors=True, save=False)
+        assert "mv_error_type" in data_with_errors.columns
+        assert "mv_error" in data_with_errors.columns
+        assert data_with_errors["mv_error_type"].dtype == "string"
+        assert data_with_errors["mv_error"].dtype == "string"
+
+        # Test with include_errors=False (should not have error columns)
+        data_without_errors = mv.aggregate_data(include_errors=False, save=False)
+        assert "mv_error_type" not in data_without_errors.columns
+        assert "mv_error" not in data_without_errors.columns
 
 
 class TestConfig:

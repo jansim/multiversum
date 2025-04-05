@@ -79,6 +79,7 @@ from .multiverse import (
 )
 @click.option(
     "--n-jobs",
+    "--njobs",
     type=int,
     default=-2,
     help="Number of CPUs to use for parallel processing. -1 uses all CPUs, -2 uses all but one CPU (default), and 1 disables parallel processing.",

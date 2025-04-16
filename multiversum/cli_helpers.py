@@ -106,6 +106,18 @@ def create_summary_table(agg_data: pd.DataFrame) -> Optional[Table]:
         success_rate = f"{(total_universes - failed) / total_universes:.1%}"
         table.add_row("Success Rate", success_rate)
         table.add_row("Failed Universes", str(failed))
+
+        # Add error type statistics if available
+        error_type_col = "mv_error_type"
+        if error_type_col in agg_data.columns and failed > 0:
+            error_types = agg_data[error_type_col].value_counts()
+            if not error_types.empty:
+                table.add_section()
+                table.add_row("Most Common Error Types", "")
+                for error_type, count in error_types.head(3).items():
+                    if pd.notna(error_type):
+                        percentage = f"{count / failed:.1%}"
+                        table.add_row(f"  {error_type}", f"{count} ({percentage})")
     else:
         table.add_row("Success Rate", "N/A")
         table.add_row("Failed Universes", "N/A")

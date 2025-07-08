@@ -1,2 +1,0 @@
-mv_universe_id,mv_run_no,mv_execution_time,mv_error_type,mv_error
-test_universe,1,,Exception,Test exception

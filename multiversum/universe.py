@@ -329,12 +329,13 @@ class Universe:
         # Write the file
         data.to_csv(filepath, index=False)
 
-    def get_export_file_path(self, filename: str) -> Path:
+    def get_export_file_path(self, filename: str, mkdir: bool = False) -> Path:
         """
         Get the file path for exporting a file from this Universe.
 
         Args:
             filename: The name of the file to export.
+            mkdir: Whether to create the directory if it does not exist. (optional)
 
         Returns:
             Path: The full path where the file should be exported.
@@ -342,48 +343,23 @@ class Universe:
         export_dir = (
             self.output_dir / "runs" / str(self.run_no) / "exports" / self.universe_id
         )
+        if mkdir:
+            export_dir.mkdir(parents=True, exist_ok=True)
         return export_dir / filename
 
-    def export_file(
-        self, filename: str, data: Union[bytes, str], mode: str = "wb"
-    ) -> None:
-        """
-        Export a file from this Universe.
-
-        Args:
-            filename: The name of the file to export.
-            data: The data to write to the file.
-            mode: The mode to open the file in (e.g., 'wb' for binary, 'w' for text).
-
-        Returns:
-            None
-        """
-        filepath = self.get_export_file_path(filename)
-        # Make sure the directory exists
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        if filepath.exists():
-            warnings.warn(f"File {filepath} already exists. Overwriting it.")
-
-        # Write the file
-        with open(filepath, mode) as f:
-            f.write(data)
-
-    def export_dataframe(self, filename: str, data: pd.DataFrame, **kwargs) -> None:
+    def export_dataframe(self, data: pd.DataFrame, filename: str, **kwargs) -> None:
         """
         Export a dataframe from this Universe with automatic format detection.
 
         Args:
-            filename: The name of the file to export.
             data: The dataframe to export.
+            filename: The name of the file to export (incl. extension).
             **kwargs: Additional keyword arguments passed to the export function.
 
         Returns:
             None
         """
-        filepath = self.get_export_file_path(filename)
-        # Make sure the directory exists
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        filepath = self.get_export_file_path(filename, mkdir=True)
 
         if filepath.exists():
             warnings.warn(f"File {filepath} already exists. Overwriting it.")

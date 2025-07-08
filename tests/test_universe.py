@@ -179,79 +179,6 @@ class TestUniverse:
             expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.png"
             assert str(file_path) == expected_path
 
-    def test_export_file_binary(self):
-        # Test exporting a binary file
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            universe = Universe(
-                {
-                    "dimensions": {"test": "value"},
-                    "universe_id": "test_universe_123",
-                    "output_dir": temp_dir,
-                }
-            )
-
-            test_data = b"binary test data"
-            universe.export_file("test.bin", test_data)
-
-            # Check that file was created
-            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.bin"
-            assert Path(expected_path).exists()
-
-            # Check content
-            with open(expected_path, "rb") as f:
-                assert f.read() == test_data
-
-    def test_export_file_text(self):
-        # Test exporting a text file
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            universe = Universe(
-                {
-                    "dimensions": {"test": "value"},
-                    "universe_id": "test_universe_123",
-                    "output_dir": temp_dir,
-                }
-            )
-
-            test_data = "text test data"
-            universe.export_file("test.txt", test_data, mode="w")
-
-            # Check that file was created
-            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.txt"
-            assert Path(expected_path).exists()
-
-            # Check content
-            with open(expected_path, "r") as f:
-                assert f.read() == test_data
-
-    def test_export_file_overwrite_warning(self):
-        # Test that overwriting a file generates a warning
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            universe = Universe(
-                {
-                    "dimensions": {"test": "value"},
-                    "universe_id": "test_universe_123",
-                    "output_dir": temp_dir,
-                }
-            )
-
-            # Export file once
-            universe.export_file("test.txt", "first content", mode="w")
-
-            # Export file again and check for warning
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                universe.export_file("test.txt", "second content", mode="w")
-
-                assert len(w) == 1
-                assert issubclass(w[0].category, UserWarning)
-                assert "already exists. Overwriting it." in str(w[0].message)
-
     def test_export_dataframe_csv(self):
         # Test exporting a dataframe as CSV
         import tempfile
@@ -266,7 +193,7 @@ class TestUniverse:
             )
 
             test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
-            universe.export_dataframe("test.csv", test_df)
+            universe.export_dataframe(test_df, "test.csv")
 
             # Check that file was created
             expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"
@@ -290,7 +217,7 @@ class TestUniverse:
             )
 
             test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
-            universe.export_dataframe("test.json", test_df)
+            universe.export_dataframe(test_df, "test.json")
 
             # Check that file was created
             expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.json"
@@ -317,7 +244,7 @@ class TestUniverse:
 
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
-                universe.export_dataframe("test.unknown", test_df)
+                universe.export_dataframe(test_df, "test.unknown")
 
                 # Check warning was raised
                 assert len(w) == 1
@@ -351,12 +278,12 @@ class TestUniverse:
             test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
 
             # Export file once
-            universe.export_dataframe("test.csv", test_df)
+            universe.export_dataframe(test_df, "test.csv")
 
             # Export file again and check for warning
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
-                universe.export_dataframe("test.csv", test_df)
+                universe.export_dataframe(test_df, "test.csv")
 
                 assert len(w) == 1
                 assert issubclass(w[0].category, UserWarning)
@@ -378,7 +305,7 @@ class TestUniverse:
             test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
 
             # Export CSV with custom separator
-            universe.export_dataframe("test.csv", test_df, sep=";")
+            universe.export_dataframe(test_df, "test.csv", sep=";")
 
             # Check that file was created with custom separator
             expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"

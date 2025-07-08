@@ -339,7 +339,7 @@ class Universe:
         Returns:
             Path: The full path where the file should be exported.
         """
-        export_dir = self.output_dir / "exports" / self.universe_id
+        export_dir = self.output_dir / "runs" / str(self.run_no) / "exports" / self.universe_id
         return export_dir / filename
 
     def export_file(self, filename: str, data: Union[bytes, str], mode: str = "wb") -> None:

@@ -173,7 +173,7 @@ class TestUniverse:
             })
             
             file_path = universe.get_export_file_path("test.png")
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.png"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.png"
             assert str(file_path) == expected_path
 
     def test_export_file_binary(self):
@@ -190,7 +190,7 @@ class TestUniverse:
             universe.export_file("test.bin", test_data)
             
             # Check that file was created
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.bin"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.bin"
             assert Path(expected_path).exists()
             
             # Check content
@@ -211,7 +211,7 @@ class TestUniverse:
             universe.export_file("test.txt", test_data, mode="w")
             
             # Check that file was created
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.txt"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.txt"
             assert Path(expected_path).exists()
             
             # Check content
@@ -254,7 +254,7 @@ class TestUniverse:
             universe.export_dataframe("test.csv", test_df)
             
             # Check that file was created
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.csv"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"
             assert Path(expected_path).exists()
             
             # Check content
@@ -275,7 +275,7 @@ class TestUniverse:
             universe.export_dataframe("test.json", test_df)
             
             # Check that file was created
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.json"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.json"
             assert Path(expected_path).exists()
             
             # Check content
@@ -304,7 +304,7 @@ class TestUniverse:
                 assert "Unknown file extension '.unknown'. Defaulting to CSV format." in str(w[0].message)
             
             # Check that file was created and is CSV format
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.unknown"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.unknown"
             assert Path(expected_path).exists()
             
             # Check content as CSV
@@ -351,7 +351,7 @@ class TestUniverse:
             universe.export_dataframe("test.csv", test_df, sep=";")
             
             # Check that file was created with custom separator
-            expected_path = f"{temp_dir}/exports/test_universe_123/test.csv"
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"
             assert Path(expected_path).exists()
             
             # Check content has semicolon separator

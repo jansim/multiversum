@@ -1,0 +1,11 @@
+mv_universe_id,mv_run_no,mv_execution_time,mv_dim_x,mv_dim_y,mv_error_type,mv_error
+ffa9b24041c120dd216c98b8b02f581c,1,,A,A,CellTimeoutError,"A cell timed out while it was being executed, after 1 seconds.
+The message was: Cell execution timed out.
+Here is a preview of the cell contents:
+-------------------
+# Sleep for 3 secs
+import time
+
+time.sleep(15)
+-------------------
+"

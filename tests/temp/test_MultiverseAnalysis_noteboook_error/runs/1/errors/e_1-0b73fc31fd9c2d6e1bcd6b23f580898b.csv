@@ -1,0 +1,12 @@
+mv_universe_id,mv_run_no,mv_execution_time,mv_dim_x,mv_dim_y,mv_error_type,mv_error
+0b73fc31fd9c2d6e1bcd6b23f580898b,1,,B,B,ValueError,"
+---------------------------------------------------------------------------
+Exception encountered at ""In [5]"":
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[5], line 2
+      1 if dimensions[""x""] == dimensions[""y""]:
+----> 2     raise ValueError(""The dimensions must not be the same"")
+
+ValueError: The dimensions must not be the same
+"

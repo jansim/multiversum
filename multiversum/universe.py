@@ -339,10 +339,14 @@ class Universe:
         Returns:
             Path: The full path where the file should be exported.
         """
-        export_dir = self.output_dir / "runs" / str(self.run_no) / "exports" / self.universe_id
+        export_dir = (
+            self.output_dir / "runs" / str(self.run_no) / "exports" / self.universe_id
+        )
         return export_dir / filename
 
-    def export_file(self, filename: str, data: Union[bytes, str], mode: str = "wb") -> None:
+    def export_file(
+        self, filename: str, data: Union[bytes, str], mode: str = "wb"
+    ) -> None:
         """
         Export a file from this Universe.
 
@@ -357,10 +361,10 @@ class Universe:
         filepath = self.get_export_file_path(filename)
         # Make sure the directory exists
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        
+
         if filepath.exists():
             warnings.warn(f"File {filepath} already exists. Overwriting it.")
-        
+
         # Write the file
         with open(filepath, mode) as f:
             f.write(data)
@@ -380,13 +384,13 @@ class Universe:
         filepath = self.get_export_file_path(filename)
         # Make sure the directory exists
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        
+
         if filepath.exists():
             warnings.warn(f"File {filepath} already exists. Overwriting it.")
-        
+
         # Determine format based on file extension
         file_ext = filepath.suffix.lower()
-        
+
         if file_ext == ".csv":
             # Default kwargs for CSV
             csv_kwargs = {"index": False}
@@ -409,7 +413,9 @@ class Universe:
             data.to_parquet(filepath, **parquet_kwargs)
         else:
             # Default to CSV for unknown extensions
-            warnings.warn(f"Unknown file extension '{file_ext}'. Defaulting to CSV format.")
+            warnings.warn(
+                f"Unknown file extension '{file_ext}'. Defaulting to CSV format."
+            )
             csv_kwargs = {"index": False}
             csv_kwargs.update(kwargs)
             data.to_csv(filepath, **csv_kwargs)

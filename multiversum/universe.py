@@ -329,6 +329,91 @@ class Universe:
         # Write the file
         data.to_csv(filepath, index=False)
 
+    def get_export_file_path(self, filename: str) -> Path:
+        """
+        Get the file path for exporting a file from this Universe.
+
+        Args:
+            filename: The name of the file to export.
+
+        Returns:
+            Path: The full path where the file should be exported.
+        """
+        export_dir = self.output_dir / "exports" / self.universe_id
+        return export_dir / filename
+
+    def export_file(self, filename: str, data: Union[bytes, str], mode: str = "wb") -> None:
+        """
+        Export a file from this Universe.
+
+        Args:
+            filename: The name of the file to export.
+            data: The data to write to the file.
+            mode: The mode to open the file in (e.g., 'wb' for binary, 'w' for text).
+
+        Returns:
+            None
+        """
+        filepath = self.get_export_file_path(filename)
+        # Make sure the directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        
+        if filepath.exists():
+            warnings.warn(f"File {filepath} already exists. Overwriting it.")
+        
+        # Write the file
+        with open(filepath, mode) as f:
+            f.write(data)
+
+    def export_dataframe(self, filename: str, data: pd.DataFrame, **kwargs) -> None:
+        """
+        Export a dataframe from this Universe with automatic format detection.
+
+        Args:
+            filename: The name of the file to export.
+            data: The dataframe to export.
+            **kwargs: Additional keyword arguments passed to the export function.
+
+        Returns:
+            None
+        """
+        filepath = self.get_export_file_path(filename)
+        # Make sure the directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        
+        if filepath.exists():
+            warnings.warn(f"File {filepath} already exists. Overwriting it.")
+        
+        # Determine format based on file extension
+        file_ext = filepath.suffix.lower()
+        
+        if file_ext == ".csv":
+            # Default kwargs for CSV
+            csv_kwargs = {"index": False}
+            csv_kwargs.update(kwargs)
+            data.to_csv(filepath, **csv_kwargs)
+        elif file_ext == ".json":
+            # Default kwargs for JSON
+            json_kwargs = {"orient": "records", "indent": 2}
+            json_kwargs.update(kwargs)
+            data.to_json(filepath, **json_kwargs)
+        elif file_ext in [".xlsx", ".xls"]:
+            # Default kwargs for Excel
+            excel_kwargs = {"index": False}
+            excel_kwargs.update(kwargs)
+            data.to_excel(filepath, **excel_kwargs)
+        elif file_ext == ".parquet":
+            # Default kwargs for Parquet
+            parquet_kwargs = {"index": False}
+            parquet_kwargs.update(kwargs)
+            data.to_parquet(filepath, **parquet_kwargs)
+        else:
+            # Default to CSV for unknown extensions
+            warnings.warn(f"Unknown file extension '{file_ext}'. Defaulting to CSV format.")
+            csv_kwargs = {"index": False}
+            csv_kwargs.update(kwargs)
+            data.to_csv(filepath, **csv_kwargs)
+
     def compute_sub_universe_metrics(
         self,
         sub_universe: Dict,

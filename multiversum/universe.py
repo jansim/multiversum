@@ -329,6 +329,73 @@ class Universe:
         # Write the file
         data.to_csv(filepath, index=False)
 
+    def get_export_file_path(self, filename: str, mkdir: bool = False) -> Path:
+        """
+        Get the file path for exporting a file from this Universe.
+
+        Args:
+            filename: The name of the file to export.
+            mkdir: Whether to create the directory if it does not exist. (optional)
+
+        Returns:
+            Path: The full path where the file should be exported.
+        """
+        export_dir = (
+            self.output_dir / "runs" / str(self.run_no) / "exports" / self.universe_id
+        )
+        if mkdir:
+            export_dir.mkdir(parents=True, exist_ok=True)
+        return export_dir / filename
+
+    def export_dataframe(self, data: pd.DataFrame, filename: str, **kwargs) -> None:
+        """
+        Export a dataframe from this Universe with automatic format detection.
+
+        Args:
+            data: The dataframe to export.
+            filename: The name of the file to export (incl. extension).
+            **kwargs: Additional keyword arguments passed to the export function.
+
+        Returns:
+            None
+        """
+        filepath = self.get_export_file_path(filename, mkdir=True)
+
+        if filepath.exists():
+            warnings.warn(f"File {filepath} already exists. Overwriting it.")
+
+        # Determine format based on file extension
+        file_ext = filepath.suffix.lower()
+
+        if file_ext == ".csv":
+            # Default kwargs for CSV
+            csv_kwargs = {"index": False}
+            csv_kwargs.update(kwargs)
+            data.to_csv(filepath, **csv_kwargs)
+        elif file_ext == ".json":
+            # Default kwargs for JSON
+            json_kwargs = {"orient": "records", "indent": 2}
+            json_kwargs.update(kwargs)
+            data.to_json(filepath, **json_kwargs)
+        elif file_ext in [".xlsx", ".xls"]:
+            # Default kwargs for Excel
+            excel_kwargs = {"index": False}
+            excel_kwargs.update(kwargs)
+            data.to_excel(filepath, **excel_kwargs)
+        elif file_ext == ".parquet":
+            # Default kwargs for Parquet
+            parquet_kwargs = {"index": False}
+            parquet_kwargs.update(kwargs)
+            data.to_parquet(filepath, **parquet_kwargs)
+        else:
+            # Default to CSV for unknown extensions
+            warnings.warn(
+                f"Unknown file extension '{file_ext}'. Defaulting to CSV format."
+            )
+            csv_kwargs = {"index": False}
+            csv_kwargs.update(kwargs)
+            data.to_csv(filepath, **csv_kwargs)
+
     def compute_sub_universe_metrics(
         self,
         sub_universe: Dict,

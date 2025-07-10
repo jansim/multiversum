@@ -1,5 +1,6 @@
 import random
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -160,6 +161,160 @@ class TestUniverse:
             "data": "full",
         }
         assert universe.dimensions == expected_dimensions
+
+    def test_get_export_file_path(self):
+        # Test that get_export_file_path returns the correct path
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            file_path = universe.get_export_file_path("test.png")
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.png"
+            assert str(file_path) == expected_path
+
+    def test_export_dataframe_csv(self):
+        # Test exporting a dataframe as CSV
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+            universe.export_dataframe(test_df, "test.csv")
+
+            # Check that file was created
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"
+            assert Path(expected_path).exists()
+
+            # Check content
+            loaded_df = pd.read_csv(expected_path)
+            pd.testing.assert_frame_equal(test_df, loaded_df)
+
+    def test_export_dataframe_json(self):
+        # Test exporting a dataframe as JSON
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+            universe.export_dataframe(test_df, "test.json")
+
+            # Check that file was created
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.json"
+            assert Path(expected_path).exists()
+
+            # Check content
+            loaded_df = pd.read_json(expected_path)
+            pd.testing.assert_frame_equal(test_df, loaded_df)
+
+    def test_export_dataframe_unknown_extension(self):
+        # Test exporting with unknown extension defaults to CSV
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                universe.export_dataframe(test_df, "test.unknown")
+
+                # Check warning was raised
+                assert len(w) == 1
+                assert issubclass(w[0].category, UserWarning)
+                assert (
+                    "Unknown file extension '.unknown'. Defaulting to CSV format."
+                    in str(w[0].message)
+                )
+
+            # Check that file was created and is CSV format
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.unknown"
+            assert Path(expected_path).exists()
+
+            # Check content as CSV
+            loaded_df = pd.read_csv(expected_path)
+            pd.testing.assert_frame_equal(test_df, loaded_df)
+
+    def test_export_dataframe_overwrite_warning(self):
+        # Test that overwriting a dataframe export generates a warning
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+            # Export file once
+            universe.export_dataframe(test_df, "test.csv")
+
+            # Export file again and check for warning
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                universe.export_dataframe(test_df, "test.csv")
+
+                assert len(w) == 1
+                assert issubclass(w[0].category, UserWarning)
+                assert "already exists. Overwriting it." in str(w[0].message)
+
+    def test_export_dataframe_custom_kwargs(self):
+        # Test that custom kwargs are passed through
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            test_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+            # Export CSV with custom separator
+            universe.export_dataframe(test_df, "test.csv", sep=";")
+
+            # Check that file was created with custom separator
+            expected_path = f"{temp_dir}/runs/0/exports/test_universe_123/test.csv"
+            assert Path(expected_path).exists()
+
+            # Check content has semicolon separator
+            with open(expected_path, "r") as f:
+                content = f.read()
+                assert ";" in content
 
 
 class TestHelpers:

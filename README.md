@@ -37,6 +37,13 @@ An example using a machine learning workflow in scikit-learn can be found [here]
 
 To quickly get started with running your own multiverse analysis, you can use the [multiversum starter template](https://github.com/jansim/multiversum-template).
 
+## Examples
+
+This section contains real-world examples of multiverse analyses conducted using this library.
+
+- Preventing Harmful Data Practices by using Participatory Input to Navigate the Machine Learning Multiverse [[Code]](https://github.com/reliable-ai/participatory-multiverse/) [[Paper]](https://dl.acm.org/doi/10.1145/3706598.3713482)
+- Bias Begins with Data: The FairGround Corpus for Robust and Reproducible Research on Algorithmic Fairness [[Code]](https://github.com/reliable-ai/fairground-analysis) [[Paper]](https://arxiv.org/abs/2510.22363)
+
 ## Development
 
 To contribute to this library, first checkout the code. Then create a new virtual environment:

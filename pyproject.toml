@@ -1,6 +1,6 @@
 [project]
 name = "multiversum"
-version = "0.7.0"
+version = "0.7.1"
 description = "A helper package to conduct multiverse analyses in Python"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -40,3 +40,6 @@ lint.extend-select = ["I"]
 
 [tool.setuptools]
 packages = ["multiversum"]
+
+[project.scripts]
+fairml-datasets = "multiversum.__main__:cli"

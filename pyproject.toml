@@ -42,4 +42,4 @@ lint.extend-select = ["I"]
 packages = ["multiversum"]
 
 [project.scripts]
-fairml-datasets = "multiversum.__main__:cli"
+multiversum = "multiversum.__main__:cli"

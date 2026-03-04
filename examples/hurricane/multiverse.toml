@@ -1,0 +1,80 @@
+[dimensions]
+# Outlier exclusion: deaths
+death_outliers = [
+    "no_exclusion",
+    "most_extreme_deaths",
+    "most_extreme_two_deaths",
+]
+
+# Outlier exclusion: damages
+damage_outliers = [
+    "no_exclusion",
+    "most_extreme_one_damage",
+    "most_extreme_two_damage",
+    "most_extreme_three_damage",
+]
+
+# How to operationalise femininity
+femininity_calculation = [
+    "masfem",
+    "female",
+]
+
+# Whether to transform the damage variable
+damage_transform = [
+    "no_transform",
+    "log_transform",
+]
+
+# Model family
+model = [
+    "linear",
+    "poisson",
+]
+
+# Whether to include femininity * damage interaction
+main_interaction = [
+    "no",
+    "yes",
+]
+
+# Additional predictors
+other_predictors = [
+    "none",
+    "pressure",
+    "wind",
+    "category",
+    "all",
+    "all_no_interaction",
+]
+
+# Covariates
+covariates = [
+    "1",
+    "2",
+    "3",
+]
+
+# Constraints implementing the R %when% conditions:
+# "pressure", "wind", "category", "all" only allowed when main_interaction == "yes"
+# "all_no_interaction" only allowed when main_interaction == "no"
+
+[[constraints.other_predictors]]
+value = "pressure"
+allowed_if = { main_interaction = "yes" }
+
+[[constraints.other_predictors]]
+value = "wind"
+allowed_if = { main_interaction = "yes" }
+
+[[constraints.other_predictors]]
+value = "category"
+allowed_if = { main_interaction = "yes" }
+
+[[constraints.other_predictors]]
+value = "all"
+allowed_if = { main_interaction = "yes" }
+
+[[constraints.other_predictors]]
+value = "all_no_interaction"
+allowed_if = { main_interaction = "no" }

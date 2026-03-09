@@ -1,0 +1,49 @@
+[dimensions]
+
+# Exclusion based on cycle length
+cycle_length = [
+    "cl_option1",  # no exclusion
+    "cl_option2",  # ComputedCycleLength > 25 & < 35
+    "cl_option3",  # ReportedCycleLength > 25 & < 35
+]
+
+# Exclusion based on self-reported certainty
+certainty = [
+    "cer_option1",  # no exclusion
+    "cer_option2",  # Sure1 > 6 | Sure2 > 6
+]
+
+# How to compute NextMenstrualOnset
+menstrual_calculation = [
+    "mc_option1",  # StartDateofLastPeriod + ComputedCycleLength
+    "mc_option2",  # StartDateofLastPeriod + ReportedCycleLength
+    "mc_option3",  # StartDateNext (directly reported)
+]
+
+# How to operationalise fertility (high vs low vs NA/medium)
+fertile = [
+    "fer_option1",  # high=[7,14], low=[17,25], else=NA
+    "fer_option2",  # high=[6,14], low=[17,27], else=NA
+    "fer_option3",  # high=[9,17], low=[18,25], else=NA
+    "fer_option4",  # high=[8,14], else=low (binary)
+    "fer_option5",  # high=[8,17], else=low (binary)
+]
+
+# How to operationalise relationship status
+relationship_status = [
+    "rs_option1",  # Single if Relationship in {1,2}, else Relationship
+    "rs_option2",  # Single if Relationship == 1, else Relationship
+    "rs_option3",  # Single if 1, Relationship if {3,4}, else NA
+]
+
+# Constraints implementing the R %when% conditions:
+# mc_option1 (using ComputedCycleLength) is forbidden when filtering by ReportedCycleLength
+# mc_option2 (using ReportedCycleLength) is forbidden when filtering by ComputedCycleLength
+
+[[constraints.menstrual_calculation]]
+value = "mc_option1"
+forbidden_if = { cycle_length = "cl_option3" }
+
+[[constraints.menstrual_calculation]]
+value = "mc_option2"
+forbidden_if = { cycle_length = "cl_option2" }

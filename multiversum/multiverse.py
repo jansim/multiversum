@@ -623,15 +623,28 @@ class MultiverseAnalysis:
         self, input_path: str, output_path: Optional[str], parameters: Dict[str, Any]
     ):
         global_dict = {SCRIPT_GLOBAL_OVERWRITE_NAME: parameters}
+        caught_error = None
 
         if output_path is not None:
             # Capture output
             script_output_capture = io.StringIO()
-            with contextlib.redirect_stdout(script_output_capture):
-                runpy.run_path(input_path, init_globals=global_dict)
+            with contextlib.redirect_stdout(
+                script_output_capture
+            ), contextlib.redirect_stderr(script_output_capture):
+                try:
+                    runpy.run_path(input_path, init_globals=global_dict)
+                except Exception as e:
+                    import traceback
+
+                    script_output_capture.write("\n\n--- ERROR ---\n")
+                    traceback.print_exc(file=script_output_capture)
+                    caught_error = e
         else:
             # Keep output as-is
-            runpy.run_path(input_path, init_globals=global_dict)
+            try:
+                runpy.run_path(input_path, init_globals=global_dict)
+            except Exception as e:
+                caught_error = e
 
         # Copy input file to output file if no output file is specified
         if output_path is not None:
@@ -652,6 +665,9 @@ class MultiverseAnalysis:
 
                     # Copy over script
                     output_file.write(input_file.read())
+
+        if caught_error is not None:
+            raise caught_error
 
     def generate_minimal_grid(self) -> List[Dict[str, Any]]:
         """

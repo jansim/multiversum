@@ -37,13 +37,12 @@ universe = Universe(
             "covariates": "1",
         }
     },
-    set_seed=False,
 )
 
 dims = universe.dimensions
 
 # ---------------------------------------------------------------------------
-# Load and prepare data (mirrors the R data preparation exactly)
+# Load and prepare data
 # ---------------------------------------------------------------------------
 data_path = Path(__file__).parent / "hurricane.csv"
 hurricane_data = pd.read_csv(data_path)

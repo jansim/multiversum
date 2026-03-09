@@ -12,7 +12,6 @@ The output is the mean difference in expected deaths between hurricanes with
 female vs. male names (female=1 minus female=0).
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -67,17 +66,15 @@ hurricane_data = hurricane_data.rename(
 # Create derived variables (pandas .std() uses ddof=1 by default, matching R's sd())
 hurricane_data["post"] = (hurricane_data["year"] > 1979).astype(int)
 hurricane_data["zcat"] = (
-    (hurricane_data["category"] - hurricane_data["category"].mean())
-    / hurricane_data["category"].std()
-)
+    hurricane_data["category"] - hurricane_data["category"].mean()
+) / hurricane_data["category"].std()
 hurricane_data["zpressure"] = -(
     (hurricane_data["pressure"] - hurricane_data["pressure"].mean())
     / hurricane_data["pressure"].std()
 )
 hurricane_data["zwind"] = (
-    (hurricane_data["wind"] - hurricane_data["wind"].mean())
-    / hurricane_data["wind"].std()
-)
+    hurricane_data["wind"] - hurricane_data["wind"].mean()
+) / hurricane_data["wind"].std()
 hurricane_data["z3"] = (
     hurricane_data["zpressure"] + hurricane_data["zcat"] + hurricane_data["zwind"]
 ) / 3

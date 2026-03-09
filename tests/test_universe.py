@@ -316,6 +316,50 @@ class TestUniverse:
                 content = f.read()
                 assert ";" in content
 
+    def test_save_data_multiple_rows_raises_error(self):
+        # Test that save_data raises ValueError for multi-row data by default
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            multi_row_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+            with pytest.raises(ValueError, match="Saving 3 rows"):
+                universe.save_data(multi_row_df)
+
+    def test_save_data_multiple_rows_allowed(self):
+        # Test that save_data succeeds for multi-row data when multiple_rows=True
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            universe = Universe(
+                {
+                    "dimensions": {"test": "value"},
+                    "universe_id": "test_universe_123",
+                    "output_dir": temp_dir,
+                }
+            )
+
+            multi_row_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+            universe.save_data(multi_row_df, multiple_rows=True)
+
+            # Verify the file was written correctly
+            expected_path = (
+                Path(temp_dir) / "runs" / "0" / "data" / "d_0_test_universe_123.csv"
+            )
+            assert expected_path.exists()
+
+            loaded_df = pd.read_csv(expected_path)
+            assert len(loaded_df) == 3
+            assert list(loaded_df["col1"]) == [1, 2, 3]
+
 
 class TestHelpers:
     def test_add_dict_to_df_empty_df_and_dict(self):

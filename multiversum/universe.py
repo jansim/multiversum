@@ -303,17 +303,29 @@ class Universe:
             execution_time=self.get_execution_time(),
         )
 
-    def save_data(self, data: pd.DataFrame, add_info: bool = True) -> None:
+    def save_data(
+        self, data: pd.DataFrame, add_info: bool = True, multiple_rows: bool = False
+    ) -> None:
         """
         Save the data to the appropriate file for this Universe.
 
         Args:
             data: The dataframe to be saved.
             add_info: Whether to add universe info to the dataframe. (optional)
+            multiple_rows: Whether to allow multiple rows in data. (optional)
 
         Returns:
             None
         """
+        if len(data) > 1 and not multiple_rows:
+            raise ValueError(
+                f"Saving {len(data)} rows for universe '{self.universe_id}'. "
+                "Data is usually in wide format (multiple columns, one row) "
+                "rather than multiple rows, as each row corresponds to a "
+                "universe. Please verify that the output is correct."
+                "You can disable this error with multiple_rows=True"
+            )
+
         # Add universe data to the dataframe
         if add_info:
             data = self._add_universe_info(data=data)

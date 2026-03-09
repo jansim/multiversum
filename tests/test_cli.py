@@ -292,5 +292,56 @@ def test_cli_finalize_mode(runner, mock_multiverse_analysis):
     mock_multiverse_analysis.return_value.aggregate_data.assert_called()
 
 
+def test_cli_aggregate_default_run(runner, mock_multiverse_analysis):
+    """Test the aggregate-data command with default (latest) run"""
+    result = runner.invoke(cli, ["aggregate-data"])
+    assert result.exit_code == 0
+
+    # Check that MultiverseAnalysis was initialized with new_run=False and no run_no
+    mock_multiverse_analysis.assert_called_once()
+    args, kwargs = mock_multiverse_analysis.call_args
+    assert kwargs.get("new_run") is False
+    assert kwargs.get("run_no") is None
+
+    # Verify aggregate_data was called
+    mock_multiverse_analysis.return_value.aggregate_data.assert_called_once_with(
+        save=True
+    )
+
+    # Verify examine_multiverse was NOT called
+    mock_multiverse_analysis.return_value.examine_multiverse.assert_not_called()
+
+    # Verify the output contains the right information
+    assert "Aggregate Data" in result.output
+
+
+def test_cli_aggregate_specific_run(runner, mock_multiverse_analysis):
+    """Test the aggregate-data command with a specific run number"""
+    result = runner.invoke(cli, ["aggregate-data", "--run", "3"])
+    assert result.exit_code == 0
+
+    # Check that MultiverseAnalysis was initialized with the specified run_no
+    mock_multiverse_analysis.assert_called_once()
+    args, kwargs = mock_multiverse_analysis.call_args
+    assert kwargs.get("new_run") is False
+    assert kwargs.get("run_no") == 3
+
+    # Verify aggregate_data was called
+    mock_multiverse_analysis.return_value.aggregate_data.assert_called_once_with(
+        save=True
+    )
+
+
+def test_cli_aggregate_custom_output_dir(runner, mock_multiverse_analysis):
+    """Test the aggregate-data command with a custom output directory"""
+    result = runner.invoke(cli, ["aggregate-data", "--output-dir", "./custom_output"])
+    assert result.exit_code == 0
+
+    mock_multiverse_analysis.assert_called_once()
+    args, kwargs = mock_multiverse_analysis.call_args
+    output_dir = kwargs.get("output_dir")
+    assert str(output_dir).endswith("custom_output")
+
+
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])

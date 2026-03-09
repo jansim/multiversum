@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 import pandas as pd
+from rich.console import Console
 from rich.table import Table
 
 
@@ -122,3 +123,29 @@ def create_summary_table(agg_data: pd.DataFrame) -> Optional[Table]:
             table.add_row("Total Execution Time", f"{exec_times.sum():.2f}s")
 
     return table
+
+
+def perform_aggregation(
+    multiverse_analysis, console: Console
+) -> Optional[pd.DataFrame]:
+    """
+    Aggregate data from a multiverse analysis and display a summary table.
+
+    This is a shared helper used by both the `run` and `aggregate` CLI commands.
+
+    Args:
+        multiverse_analysis: A MultiverseAnalysis instance.
+        console: A rich Console instance for output.
+
+    Returns:
+        The aggregated DataFrame, or None if aggregation failed.
+    """
+    agg_data = None
+    with console.status("[bold green]Aggregating data...[/bold green]"):
+        agg_data = multiverse_analysis.aggregate_data(save=True)
+
+    table = create_summary_table(agg_data)
+    if table:
+        console.print(table)
+
+    return agg_data

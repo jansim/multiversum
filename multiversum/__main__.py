@@ -6,8 +6,8 @@ from rich.console import Console
 from rich.panel import Panel
 
 from .cli_helpers import (
-    create_summary_table,
     parse_partial_percentages,
+    perform_aggregation,
     split_multiverse_grid,
 )
 from .helpers import calculate_cpu_count
@@ -21,7 +21,24 @@ from .multiverse import (
 )
 
 
-@click.command()
+class DefaultGroup(click.Group):
+    """A click Group that defaults to the 'run' command when no subcommand is given."""
+
+    default_cmd_name = "run"
+
+    def parse_args(self, ctx, args):
+        if not args or args[0] not in self.commands:
+            args = [self.default_cmd_name] + list(args)
+        return super().parse_args(ctx, args)
+
+
+@click.group(cls=DefaultGroup)
+def cli():
+    """Multiversum: Run and manage multiverse analyses."""
+    pass
+
+
+@cli.command()
 @click.option(
     "--mode",
     type=click.Choice(["full", "continue", "test", "partial-parallel", "finalize"]),
@@ -103,7 +120,7 @@ from .multiverse import (
     help="When mode=continue, retry only universes that failed with this specific error type.",
 )
 @click.pass_context
-def cli(
+def run(
     ctx,
     mode,
     config,
@@ -295,15 +312,50 @@ def cli(
 
     multiverse_analysis.check_missing_universes()
 
-    # Aggregate data
-    agg_data = None
-    with console.status("[bold green]Aggregating data...[/bold green]"):
-        agg_data = multiverse_analysis.aggregate_data(save=True)
+    # Aggregate data and display summary
+    perform_aggregation(multiverse_analysis, console)
 
-    # Display a summary table of the analysis results
-    table = create_summary_table(agg_data)
-    if table:
-        console.print(table)
+
+@cli.command("aggregate-data")
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    default=None,
+    help=f"Relative path to a TOML, JSON or Python file with a config for the multiverse. Defaults to searching for {', '.join(DEFAULT_CONFIG_FILES)} (in that order).",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(),
+    default="./output",
+    help="Relative path to output directory for the results.",
+)
+@click.option(
+    "--run",
+    "run_no",
+    type=int,
+    default=None,
+    help="Run number to aggregate data for. Defaults to the latest run.",
+)
+def aggregate_data(config, output_dir, run_no):
+    """Aggregate data from a specific run (default: latest run)."""
+    console = Console()
+
+    multiverse_analysis = MultiverseAnalysis(
+        config=config,
+        output_dir=Path(output_dir),
+        new_run=False,
+        run_no=run_no,
+    )
+
+    console.print(
+        Panel.fit(
+            f"Run No.: [bold cyan]{multiverse_analysis.run_no}[/bold cyan]",
+            title="multiversum: Aggregate Data",
+            border_style="cyan",
+        )
+    )
+
+    perform_aggregation(multiverse_analysis, console)
 
 
 if __name__ == "__main__":

@@ -352,7 +352,12 @@ class TestUniverse:
 
             # Verify the file was written correctly
             expected_path = (
-                Path(temp_dir) / "runs" / "0" / "data" / "d_0_test_universe_123.csv"
+                Path(temp_dir)
+                / "runs"
+                / "0"
+                / "data"
+                / "universes"
+                / "d_0_test_universe_123.csv"
             )
             assert expected_path.exists()
 

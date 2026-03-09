@@ -1,0 +1,3 @@
+ERRORS_DIR_NAME = "errors"
+DATA_DIR_NAME = "data"
+UNIVERSE_DATA_DIR_NAME = DATA_DIR_NAME + "/universes"

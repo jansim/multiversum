@@ -13,6 +13,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
+from multiversum.paths import UNIVERSE_DATA_DIR_NAME
+
 from .helpers import add_universe_info_to_df
 from .multiverse import SCRIPT_GLOBAL_OVERWRITE_NAME, generate_multiverse_grid
 
@@ -331,7 +333,9 @@ class Universe:
             data = self._add_universe_info(data=data)
 
         # Path management
-        target_dir = self.output_dir / "runs" / str(self.run_no) / "data"
+        target_dir = (
+            self.output_dir / "runs" / str(self.run_no) / UNIVERSE_DATA_DIR_NAME
+        )
         # Make sure the directory exists
         target_dir.mkdir(parents=True, exist_ok=True)
         filename = f"d_{str(self.run_no)}_{self.universe_id}.csv"

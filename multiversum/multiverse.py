@@ -16,6 +16,8 @@ import pandas as pd
 import papermill as pm
 from joblib import Parallel, cpu_count, delayed
 
+from multiversum.paths import DATA_DIR_NAME, ERRORS_DIR_NAME, UNIVERSE_DATA_DIR_NAME
+
 from .helpers import (
     add_ids_to_multiverse_grid,
     add_universe_info_to_df,
@@ -46,7 +48,6 @@ from rich.progress import (
 from .parallel import rich_joblib
 
 DEFAULT_SEED = 80539
-ERRORS_DIR_NAME = "errors"
 SCRIPT_GLOBAL_OVERWRITE_NAME = "MULTIVERSUM_OVERRIDE_SETTINGS"
 DEFAULT_CONFIG_FILES = ["multiverse.toml", "multiverse.json", "multiverse.py"]
 DEFAULT_UNIVERSE_FILES = ["universe.ipynb", "universe.py"]
@@ -335,8 +336,9 @@ class MultiverseAnalysis:
         Returns:
             A pandas DataFrame containing the aggregated data from all universes.
         """
-        data_dir = self.get_run_dir(sub_directory="data")
-        csv_files = list(data_dir.glob("*.csv"))
+        data_dir = self.get_run_dir(sub_directory=DATA_DIR_NAME)
+        universe_data_dir = self.get_run_dir(sub_directory=UNIVERSE_DATA_DIR_NAME)
+        csv_files = list(universe_data_dir.glob("*.csv"))
 
         if include_errors:
             error_dir = self.get_run_dir(sub_directory=ERRORS_DIR_NAME)

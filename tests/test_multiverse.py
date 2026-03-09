@@ -153,7 +153,7 @@ class TestMultiverseAnalysis:
         mv.examine_multiverse(n_jobs=1)
 
         # Check whether all expected files are there
-        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 4
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
         assert count_files(output_dir, "counter.txt") == 1
 
@@ -180,7 +180,7 @@ class TestMultiverseAnalysis:
         mv.examine_multiverse(n_jobs=1)
 
         # Check whether all expected files are there
-        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 4
         assert count_files(output_dir, "runs/1/universes/*.py") == 4
         assert count_files(output_dir, "counter.txt") == 1
 
@@ -217,7 +217,7 @@ class TestMultiverseAnalysis:
         assert error_msg_count == 2
 
         # Check whether all expected files are there
-        assert count_files(output_dir, "runs/1/data/*.csv") == 2
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 2
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
         assert count_files(output_dir, "runs/1/universes/E_*.ipynb") == 2, (
             "Notebooks with errors are highlighted"
@@ -256,7 +256,7 @@ class TestMultiverseAnalysis:
             mv.examine_multiverse()
 
         # Check whether all expected files are there
-        assert count_files(output_dir, "runs/1/data/*.csv") == 0
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 0
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 2
         assert count_files(output_dir, "counter.txt") == 1
 
@@ -284,7 +284,7 @@ class TestMultiverseAnalysis:
         mv.examine_multiverse()
 
         # Check whether all expected files are there
-        assert count_files(output_dir, "runs/1/data/*.csv") == 0
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 0
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 2
         assert count_files(output_dir, "runs/1/universes/E_*.ipynb") == 2, (
             "Notebooks with errors are highlighted"
@@ -516,7 +516,7 @@ class TestUniverse:
         )
         data = pd.DataFrame({"test_value": [42]})
         uv.save_data(data)
-        assert count_files(output_dir, "runs/0/data/*.csv") == 1
+        assert count_files(output_dir, "runs/0/data/universes/*.csv") == 1
 
     def test_generate_sub_universes(self):
         uv = Universe(
@@ -568,7 +568,7 @@ class TestCLI:
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv.gz") == 1
-        assert count_files(output_dir, "runs/1/data/*.csv") == 4
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 4
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 4
         assert count_files(output_dir, "counter.txt") == 1
         assert count_files(output_dir, "multiverse_grid.json") == 1
@@ -587,7 +587,7 @@ class TestCLI:
 
         # Check whether all expected files are there
         assert count_files(output_dir, "runs/1/data/*.csv.gz") == 0
-        assert count_files(output_dir, "runs/1/data/*.csv") == 0
+        assert count_files(output_dir, "runs/1/data/universes/*.csv") == 0
         assert count_files(output_dir, "runs/1/universes/*.ipynb") == 0
         assert count_files(output_dir, "counter.txt") == 0
         assert count_files(output_dir, "multiverse_grid.json") == 0

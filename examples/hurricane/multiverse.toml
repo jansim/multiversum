@@ -1,80 +1,50 @@
 [dimensions]
-# Outlier exclusion: deaths
+# (k1) Outlier exclusion: maximum number of deaths
 death_outliers = [
-    "no_exclusion",
-    "most_extreme_deaths",
-    "most_extreme_two_deaths",
+    "no_exclusion",           # nothing dropped
+    "drop_katrina",           # drop Katrina (1833 deaths)
+    "drop_katrina_audrey",    # drop Katrina and Audrey (>416 deaths)
 ]
 
-# Outlier exclusion: damages
+# (k2) Leverage points: maximum number of damages in dollars
 damage_outliers = [
-    "no_exclusion",
-    "most_extreme_one_damage",
-    "most_extreme_two_damage",
-    "most_extreme_three_damage",
+    "no_exclusion",           # nothing dropped
+    "drop_1_highest_damage",  # drop highest damage
+    "drop_2_highest_damage",  # drop 2 highest damage
+    "drop_3_highest_damage",  # drop 3 highest damage
 ]
 
-# How to operationalise femininity
-femininity_calculation = [
-    "masfem",
-    "female",
+# (k3) Femininity operationalisation
+femininity = [
+    "female_dummy",           # binary dummy (1=female, 0=male)
+    "masfem_rating",          # continuous femininity rating from MTurk (1-11)
 ]
 
-# Whether to transform the damage variable
-damage_transform = [
-    "no_transform",
-    "log_transform",
-]
-
-# Model family
+# (k4) Model specification
 model = [
-    "linear",
-    "poisson",
+    "ols_log",                # OLS on log(deaths+1)
+    "negative_binomial",      # negative binomial on raw death count
 ]
 
-# Whether to include femininity * damage interaction
-main_interaction = [
-    "no",
-    "yes",
+# (k5) Damages functional form
+damage_transform = [
+    "linear",                 # damages in dollars
+    "log",                    # log(damages)
 ]
 
-# Additional predictors
-other_predictors = [
-    "none",
-    "pressure",
-    "wind",
-    "category",
-    "all",
-    "all_no_interaction",
+# (k6) Femininity predictor specification
+predictor_spec = [
+    "x_damages",                      # femininity × damages only
+    "x_damages_pressure",             # + femininity × min pressure
+    "x_damages_wind",                 # + femininity × max wind
+    "x_damages_category",             # + femininity × hurricane category
+    "x_damages_all",                  # + femininity × mean(pressure,wind,cat)
+    "main_effect_only",               # no interaction, main effects only
 ]
 
-# Covariates
+# (k7) Year covariates
 covariates = [
-    "1",
-    "2",
-    "3",
+    "none",                   # no year controls
+    "year_x_damages",         # year × damages interaction
+    "post1979_x_damages",     # post-1979 dummy × damages interaction
 ]
-
-# Constraints implementing the R %when% conditions:
-# "pressure", "wind", "category", "all" only allowed when main_interaction == "yes"
-# "all_no_interaction" only allowed when main_interaction == "no"
-
-[[constraints.other_predictors]]
-value = "pressure"
-allowed_if = { main_interaction = "yes" }
-
-[[constraints.other_predictors]]
-value = "wind"
-allowed_if = { main_interaction = "yes" }
-
-[[constraints.other_predictors]]
-value = "category"
-allowed_if = { main_interaction = "yes" }
-
-[[constraints.other_predictors]]
-value = "all"
-allowed_if = { main_interaction = "yes" }
-
-[[constraints.other_predictors]]
-value = "all_no_interaction"
-allowed_if = { main_interaction = "no" }

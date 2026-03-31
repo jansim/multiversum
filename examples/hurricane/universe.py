@@ -1,17 +1,3 @@
-"""
-Reimplementation of the hurricane multiverse analysis from
-Jung et al. / Simonsohn et al. using Python and multiversum.
-
-Original R implementation: example-hurricane.Rmd (using the R multiverse package)
-
-Each universe fits a GLM (Gaussian or Poisson) predicting hurricane deaths,
-varying outlier exclusions, femininity operationalisation, damage transformation,
-model family, interaction terms, additional predictors, and covariates.
-
-The output is the mean difference in expected deaths between hurricanes with
-female vs. male names (female=1 minus female=0).
-"""
-
 from pathlib import Path
 
 import numpy as np
@@ -21,171 +7,173 @@ import statsmodels.formula.api as smf
 
 from multiversum import Universe
 
-# ---------------------------------------------------------------------------
-# Initialise universe
-# ---------------------------------------------------------------------------
-universe = Universe(
-    settings={
-        "dimensions": {
-            "death_outliers": "no_exclusion",
-            "damage_outliers": "no_exclusion",
-            "femininity_calculation": "masfem",
-            "damage_transform": "no_transform",
-            "model": "linear",
-            "main_interaction": "no",
-            "other_predictors": "none",
-            "covariates": "1",
-        }
-    },
-)
+settings = {
+    "dimensions": {
+        "death_outliers": "no_exclusion",
+        "damage_outliers": "no_exclusion",
+        "femininity": "female_dummy",
+        "model": "negative_binomial",
+        "damage_transform": "linear",
+        "predictor_spec": "x_damages",
+        "covariates": "none",
+    }
+}
 
+universe = Universe(settings=settings)
 dims = universe.dimensions
 
-# ---------------------------------------------------------------------------
-# Load and prepare data
-# ---------------------------------------------------------------------------
-data_path = Path(__file__).parent / "hurricane.csv"
-hurricane_data = pd.read_csv(data_path)
 
-# Rename variables to match the R analysis
-hurricane_data = hurricane_data.rename(
-    columns={
-        "Year": "year",
-        "Name": "name",
-        "NDAM": "dam",
-        "alldeaths": "death",
-        "Gender_MF": "female",
-        "MasFem": "masfem",
-        "Category": "category",
-        "Minpressure_Updated_2014": "pressure",
-        "HighestWindSpeed": "wind",
-    }
-)
+# Load original hurricane data (from Simonsohn et al. 2020)
+data_path = Path(".").resolve() / "hurricanes_2015_01_09.dta"
+df = pd.read_stata(data_path)
 
-# Create derived variables (pandas .std() uses ddof=1 by default, matching R's sd())
-hurricane_data["post"] = (hurricane_data["year"] > 1979).astype(int)
-hurricane_data["zcat"] = (
-    hurricane_data["category"] - hurricane_data["category"].mean()
-) / hurricane_data["category"].std()
-hurricane_data["zpressure"] = -(
-    (hurricane_data["pressure"] - hurricane_data["pressure"].mean())
-    / hurricane_data["pressure"].std()
-)
-hurricane_data["zwind"] = (
-    hurricane_data["wind"] - hurricane_data["wind"].mean()
-) / hurricane_data["wind"].std()
-hurricane_data["z3"] = (
-    hurricane_data["zpressure"] + hurricane_data["zcat"] + hurricane_data["zwind"]
-) / 3
+# Clean data (following the Stata do-file)
+df = df.drop(columns=["masfem"])                     # drop original masfem
+df = df.rename(columns={
+    "masfem_mturk": "masfem",                        # use MTurk femininity rating
+    "ndam15": "dam",                                  # use updated damage numbers
+    "gender_mf": "female",                            # rename gender
+    "alldeaths": "d",                                 # rename fatalities
+})
+df = df.drop(columns=["ndam"])                        # drop old damages
 
-# ---------------------------------------------------------------------------
-# Apply outlier exclusions
-# ---------------------------------------------------------------------------
-df = hurricane_data.copy()
+# Create derived variables
+df["lnd"] = np.log(df["d"] + 1)                      # log(deaths + 1)
+df["lndam"] = np.log(df["dam"])                       # log(damages)
+df["post79"] = (df["year"] > 1979).astype(int)        # post-1979 dummy
 
-# Death outliers
-if dims["death_outliers"] == "most_extreme_deaths":
-    df = df[df["name"] != "Katrina"]
-elif dims["death_outliers"] == "most_extreme_two_deaths":
-    df = df[~df["name"].isin(["Katrina", "Audrey"])]
+# Standardize hurricane characteristics
+df["zwin"] = (df["wind"] - df["wind"].mean()) / df["wind"].std()
+df["zcat"] = (df["category"] - df["category"].mean()) / df["category"].std()
+df["zmin"] = -((df["min"] - df["min"].mean()) / df["min"].std())  # reversed
+df["z3"] = (df["zwin"] + df["zcat"] + df["zmin"]) / 3
 
-# Damage outliers
-if dims["damage_outliers"] == "most_extreme_one_damage":
-    df = df[~df["name"].isin(["Sandy"])]
-elif dims["damage_outliers"] == "most_extreme_two_damage":
-    df = df[~df["name"].isin(["Sandy", "Andrew"])]
-elif dims["damage_outliers"] == "most_extreme_three_damage":
-    df = df[~df["name"].isin(["Sandy", "Andrew", "Donna"])]
+# (k1) Apply death outlier exclusions
+if dims["death_outliers"] == "no_exclusion":
+    pass
+elif dims["death_outliers"] == "drop_katrina":
+    df = df[df["d"] < 1833]
+elif dims["death_outliers"] == "drop_katrina_audrey":
+    df = df[df["d"] < 416]
+else:
+    raise ValueError(f"Unknown death_outliers: {dims['death_outliers']}")
 
-# ---------------------------------------------------------------------------
-# Compute analysis variables
-# ---------------------------------------------------------------------------
-# Femininity operationalisation
-if dims["femininity_calculation"] == "masfem":
-    df["femininity"] = df["masfem"]
-else:  # "female"
-    df["femininity"] = df["female"]
+# (k2) Apply damage outlier exclusions
+if dims["damage_outliers"] == "no_exclusion":
+    pass
+elif dims["damage_outliers"] == "drop_1_highest_damage":
+    df = df[df["dam"] < 75260]
+elif dims["damage_outliers"] == "drop_2_highest_damage":
+    df = df[df["dam"] < 62030]
+elif dims["damage_outliers"] == "drop_3_highest_damage":
+    df = df[df["dam"] < 52270]
+else:
+    raise ValueError(f"Unknown damage_outliers: {dims['damage_outliers']}")
 
-# Damage transformation
-if dims["damage_transform"] == "log_transform":
-    df["damage"] = np.log(df["dam"])
-else:  # "no_transform"
+# (k3) Femininity operationalisation
+if dims["femininity"] == "female_dummy":
+    df["fem"] = df["female"]
+elif dims["femininity"] == "masfem_rating":
+    df["fem"] = df["masfem"]
+else:
+    raise ValueError(f"Unknown femininity: {dims['femininity']}")
+
+# (k5) Damage functional form
+if dims["damage_transform"] == "linear":
     df["damage"] = df["dam"].astype(float)
+elif dims["damage_transform"] == "log":
+    df["damage"] = df["lndam"]
+else:
+    raise ValueError(f"Unknown damage_transform: {dims['damage_transform']}")
 
-# ---------------------------------------------------------------------------
-# Build GLM formula
-# ---------------------------------------------------------------------------
-# Response variable
-if dims["model"] == "linear":
-    df["response"] = np.log(df["death"] + 1)
+# Build formula string
+
+# (k6) Predictor specification
+predictor_formulas = {
+    "x_damages":          "fem * damage",
+    "x_damages_pressure": "fem * damage + fem * zmin",
+    "x_damages_wind":     "fem * damage + fem * zwin",
+    "x_damages_category": "fem * damage + fem * zcat",
+    "x_damages_all":      "fem * damage + fem * z3",
+    "main_effect_only":   "fem + damage + z3",
+}
+if dims["predictor_spec"] not in predictor_formulas:
+    raise ValueError(f"Unknown predictor_spec: {dims['predictor_spec']}")
+terms = predictor_formulas[dims["predictor_spec"]]
+
+# (k7) Year covariates
+if dims["covariates"] == "none":
+    pass
+elif dims["covariates"] == "year_x_damages":
+    terms += " + year + year:damage"
+elif dims["covariates"] == "post1979_x_damages":
+    terms += " + post79 + post79:damage"
+else:
+    raise ValueError(f"Unknown covariates: {dims['covariates']}")
+
+# (k4) Response and family
+if dims["model"] == "ols_log":
+    formula = f"lnd ~ {terms}"
     family = sm.families.Gaussian()
-else:  # "poisson"
-    df["response"] = df["death"].astype(float)
-    family = sm.families.Poisson()
+elif dims["model"] == "negative_binomial":
+    formula = f"d ~ {terms}"
+    family = sm.families.NegativeBinomial(alpha=1.0)
+else:
+    raise ValueError(f"Unknown model: {dims['model']}")
 
-# Main terms
-if dims["main_interaction"] == "no":
-    main_terms = "femininity + damage"
-else:  # "yes"
-    main_terms = "femininity * damage"
+# Fit model (robust SEs, matching Stata's ", robust")
+fit = smf.glm(formula=formula, data=df, family=family).fit(cov_type="HC1")
 
-# Other predictors (constraints in multiverse.toml ensure valid combinations)
-other_terms = ""
-if dims["other_predictors"] == "pressure":
-    other_terms = " + femininity * zpressure"
-elif dims["other_predictors"] == "wind":
-    other_terms = " + femininity * zwind"
-elif dims["other_predictors"] == "category":
-    other_terms = " + femininity * zcat"
-elif dims["other_predictors"] == "all":
-    other_terms = " + femininity * z3"
-elif dims["other_predictors"] == "all_no_interaction":
-    other_terms = " + z3"
+# Extract coefficient and p-value of the first predictor term
+first_pred = fit.params.index[1]  # first predictor after Intercept
+beta = fit.params[first_pred]
+pvalue = fit.pvalues[first_pred]
 
-# Covariates
-cov_terms = ""
-if dims["covariates"] == "2":
-    cov_terms = " + year:damage"
-elif dims["covariates"] == "3":
-    cov_terms = " + post:damage"
+# Compute predicted values at mean covariate values for male vs female names
+if dims["femininity"] == "female_dummy":
+    fem_male, fem_female = 0.0, 1.0
+elif dims["femininity"] == "masfem_rating":
+    fem_male, fem_female = 2.53, 8.29  # mean MTurk rating for male/female names
+else:
+    raise ValueError(f"Unknown femininity: {dims['femininity']}")
 
-formula = f"response ~ {main_terms}{other_terms}{cov_terms}"
+# Build prediction DataFrames at covariate means with fem set to male/female value
+pred_base = df.mean(numeric_only=True).to_frame().T
 
-# ---------------------------------------------------------------------------
-# Fit model
-# ---------------------------------------------------------------------------
-fit = smf.glm(formula=formula, data=df, family=family).fit()
+pred_male_data = pred_base.copy()
+pred_male_data["fem"] = fem_male
 
-# ---------------------------------------------------------------------------
-# Compute predictions and expected deaths
-# ---------------------------------------------------------------------------
-pred = fit.predict(df)
+pred_female_data = pred_base.copy()
+pred_female_data["fem"] = fem_female
 
-if dims["model"] == "linear":
-    # Back-transform from log scale with bias correction: E[Y] = exp(mu + sigma^2/2) - 1
-    # sigma = residual standard deviation = sqrt(scale) for Gaussian GLM
-    sigma_val = np.sqrt(fit.scale)
-    expected_deaths = np.exp(pred + sigma_val**2 / 2) - 1
-else:  # "poisson"
-    # Predictions are already on the count scale (type="response")
-    expected_deaths = pred
+pred_male = fit.predict(pred_male_data).iloc[0]
+pred_female = fit.predict(pred_female_data).iloc[0]
 
-df = df.copy()
-df["expected_deaths"] = expected_deaths
+# Compute expected death difference (female - male)
+if dims["model"] == "ols_log":
+    # Back-transform from log scale with Wooldridge correction
+    # (following Stata do-file: regress d on exp(fitted)-1, get correction factor)
+    fitted_log = fit.predict(df)
+    exp_fitted = np.exp(fitted_log) - 1
+    ln_adjust = sm.OLS(df["d"].astype(float), exp_fitted).fit().params.iloc[0]
+    edif = (np.exp(pred_female) - np.exp(pred_male)) * ln_adjust
+elif dims["model"] == "negative_binomial":
+    # GLM with log link: predict() already returns response-scale (expected counts)
+    edif = pred_female - pred_male
+else:
+    raise ValueError(f"Unknown model: {dims['model']}")
 
-# ---------------------------------------------------------------------------
-# Aggregate: mean difference in expected deaths (female=1 minus female=0)
-# Mirrors R's: compare_levels(mean_deaths, by = female)
-# ---------------------------------------------------------------------------
-mean_by_female = df.groupby("female")["expected_deaths"].mean()
-mean_deaths_diff = mean_by_female.loc[1] - mean_by_female.loc[0]
-
-# ---------------------------------------------------------------------------
 # Save results
-# ---------------------------------------------------------------------------
-result = pd.DataFrame(
-    {
-        "mean_deaths": [mean_deaths_diff],
-    }
-)
+sig = 1 if pvalue < 0.05 else 0
+
+result = pd.DataFrame({
+    "beta": [beta],
+    "pvalue": [pvalue],
+    "sig": [sig],
+    "expected_deaths_male": [pred_male],
+    "expected_deaths_female": [pred_female],
+    "expected_deaths_diff": [edif],
+    "n": [len(df)],
+})
+
 universe.save_data(result)

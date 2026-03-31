@@ -1,8 +1,6 @@
 
-Drawing from: https://github.com/MUCollective/multiverse/blob/master/vignettes/example-hurricane.Rmd
-
-Rendered vignette here: https://mucollective.github.io/multiverse/articles/example-hurricane.html
+Drawing from: https://doi.org/10.1371/journal.pone.0339452
 
 ## Data
 
-The dataset `hurricane.csv` is loaded and exported from the R package `multiverse`. Documentation of the dataset be found at https://mucollective.github.io/multiverse/reference/hurricane.html.
+The dataset `hurricanes_2015_01_09.dta` is taken from the supplementary information of https://doi.org/10.1371/journal.pone.0339452 the full file incl. their implementation can be found here: https://osf.io/64wxf/files/osfstorage.
